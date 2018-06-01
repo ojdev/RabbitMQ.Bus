@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>欧俊</Authors>
+    <Description>一个.netcore下的，十分简单的rabbitmq封装，基于RabbitMQ.Client</Description>
+    <PackageProjectUrl>https://github.com/ojdev/RabbitMQ.Bus</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/ojdev/RabbitMQ.Bus/raw/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/ojdev/RabbitMQ.Bus</RepositoryUrl>
+    <PackageTags>rqbbitmq,dnc</PackageTags>
+    <AssemblyVersion>0.0.1</AssemblyVersion>
+    <FileVersion>0.0.1</FileVersion>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Version>0.0.1</Version>
+    <RepositoryType>github</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.0\RabbitMQ.Bus.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+
+</Project>
