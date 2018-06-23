@@ -3,6 +3,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace RabbitMQ.Bus
@@ -38,33 +39,43 @@ namespace RabbitMQ.Bus
         /// <summary>
         /// 订阅消息
         /// </summary>
-        /// <typeparam name="TIn"></typeparam>
-        /// <typeparam name="TOut"></typeparam>
-        /// <param name="queueName">队列名称</param>
-        /// <param name="isReply">是否确认消费，确认后其他人将接收不到消息,默认为确认</param>
-        public void Subscribe<TIn, TOut>(string queueName, bool isReply = true) where TIn : IRabbitMQBusHandler<TOut>
+        /// <typeparam name="TMessage"></typeparam>
+        public void Subscribe<TMessage>() where TMessage : class
         {
+            var messageType = typeof(TMessage);
+            var messageAttribute = messageType.GetCustomAttributes(typeof(QueueAttribute), true).FirstOrDefault();
+            if (messageAttribute == null)
+            {
+                throw new ArgumentNullException($"{messageType.Name}缺少{nameof(QueueAttribute)}标识。");
+            }
             EventingBasicConsumer _consumer = new EventingBasicConsumer(_factory.Channel);
             _consumer.Received += (ch, ea) =>
             {
-                var handler = Activator.CreateInstance<TIn>();
-                var message = Encoding.UTF8.GetString(ea.Body);
-                handler.Handle(JsonConvert.DeserializeObject<TOut>(message));
-                if (isReply)
+                var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<TMessage>)))).ToArray();
+                if (allhandles.Count() == 0)
                 {
-                    _factory.Channel.BasicAck(ea.DeliveryTag, false);
+                    Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
                 }
+                var messageBody = Encoding.UTF8.GetString(ea.Body);
+                TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
+                foreach (var handleType in allhandles)
+                {
+                    var handler = (IRabbitMQBusHandler<TMessage>)Activator.CreateInstance(handleType);
+                    handler.Handle(message).Wait();
+                    handler = null;
+                }
+                _factory.Channel.BasicAck(ea.DeliveryTag, false);
             };
-            _factory.Channel.BasicConsume(queueName, false, _consumer);
+            _factory.Channel.BasicConsume((messageAttribute as QueueAttribute).QueueName, false, _consumer);
         }
         /// <summary>
         /// 发送消息
         /// </summary>
-        /// <typeparam name="TIn"></typeparam>
+        /// <typeparam name="TMessage"></typeparam>
         /// <param name="queueName"></param>
         /// <param name="value"></param>
-        /// <param name="routingKey">路由Key，可为空</param>
-        public void Publish<TIn>(string queueName, TIn value, string routingKey = "")
+        /// <param name="routingKey">路由Key</param>
+        public void Publish<TMessage>(string queueName, TMessage value, string routingKey)
         {
             if (!_isBinding || !Queues.Contains(queueName))
             {
@@ -78,7 +89,7 @@ namespace RabbitMQ.Bus
         /// </summary>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private void Binding(string queueName, string routingKey = "")
+        private void Binding(string queueName, string routingKey)
         {
             _factory.Channel.QueueUnbind(queueName, _config.ExchangeName, routingKey);
             _factory.Channel.ExchangeDeclare(_config.ExchangeName, ExchangeType.Direct, false, false, null);
