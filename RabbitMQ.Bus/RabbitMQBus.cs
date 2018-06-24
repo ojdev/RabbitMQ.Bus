@@ -2,7 +2,9 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using RabbitMQ.Bus.Extensions;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace RabbitMQ.Bus
@@ -14,78 +16,136 @@ namespace RabbitMQ.Bus
     {
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
-        private bool _isBinding = false;
-        /// <summary>
-        /// 现有队列
-        /// </summary>
-        public List<string> Queues { set; get; }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="config"></param>
         public RabbitMQBusService(RabbitMQConfig config)
         {
-            Queues = new List<string>();
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _factory = new RabbitMQBusFactory();
-            _factory.ConnectionFactory = new ConnectionFactory();
-            _factory.ConnectionFactory.AutomaticRecoveryEnabled = config.AutomaticRecoveryEnabled;
-            _factory.ConnectionFactory.NetworkRecoveryInterval = config.NetworkRecoveryInterval;
-            _factory.ConnectionFactory.Uri = new Uri(config.ConnectionString);
+            _factory = new RabbitMQBusFactory
+            {
+                ConnectionFactory = new ConnectionFactory
+                {
+                    AutomaticRecoveryEnabled = config.AutomaticRecoveryEnabled,
+                    NetworkRecoveryInterval = config.NetworkRecoveryInterval,
+                    Uri = new Uri(config.ConnectionString)
+                }
+            };
             _factory.GetConnection = _factory.ConnectionFactory.CreateConnection();
-            _factory.Channel = _factory.GetConnection.CreateModel();
         }
         /// <summary>
         /// 订阅消息
         /// </summary>
-        /// <typeparam name="TIn"></typeparam>
-        /// <typeparam name="TOut"></typeparam>
-        /// <param name="queueName">队列名称</param>
-        /// <param name="isReply">是否确认消费，确认后其他人将接收不到消息,默认为确认</param>
-        public void Subscribe<TIn, TOut>(string queueName, bool isReply = true) where TIn : IRabbitMQBusHandler<TOut>
+        /// <typeparam name="TMessage"></typeparam>
+        public void Subscribe<TMessage>() where TMessage : class
         {
-            EventingBasicConsumer _consumer = new EventingBasicConsumer(_factory.Channel);
+            var messageType = typeof(TMessage);
+            var queue = messageType.GetQueue();
+
+            IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+
+            EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += (ch, ea) =>
             {
-                var handler = Activator.CreateInstance<TIn>();
-                var message = Encoding.UTF8.GetString(ea.Body);
-                handler.Handle(JsonConvert.DeserializeObject<TOut>(message));
-                if (isReply)
+                var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<TMessage>)))).ToArray();
+                if (allhandles.Count() == 0)
                 {
-                    _factory.Channel.BasicAck(ea.DeliveryTag, false);
+                    Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
                 }
+                var messageBody = Encoding.UTF8.GetString(ea.Body);
+                TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
+                foreach (var handleType in allhandles)
+                {
+                    var handler = (IRabbitMQBusHandler<TMessage>)Activator.CreateInstance(handleType);
+                    handler.Handle(message).Wait();
+                    handler = null;
+                }
+                channel.BasicAck(ea.DeliveryTag, false);
             };
-            _factory.Channel.BasicConsume(queueName, false, _consumer);
+            channel.BasicConsume(queue.QueueName, true, _consumer);
+        }
+        /// <summary>
+        /// 自动订阅消息
+        /// </summary>
+        public void AutoSubscribe()
+        {
+            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Length > 0)).ToArray();
+            foreach (var queueType in allQueue)
+            {
+                var genericType = typeof(IRabbitMQBusHandler<>).MakeGenericType(queueType);
+                var allHandler = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(genericType))).ToArray();
+                if (allHandler.Count() == 0)
+                {
+                    continue;
+                }
+
+                var queue = queueType.GetQueue();
+                IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+                EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
+                _consumer.Received += (ch, ea) =>
+                {
+                    var messageBody = Encoding.UTF8.GetString(ea.Body);
+                    var message = JsonConvert.DeserializeObject(messageBody, queueType);
+                    foreach (var handleType in allHandler)
+                    {
+                        var handler = Activator.CreateInstance(handleType);
+                        var method = handleType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle));
+                        method.Invoke(handler, new object[] { message });
+                    }
+                    channel.BasicAck(ea.DeliveryTag, false);
+                };
+                channel.BasicConsume(queue.QueueName, false, _consumer);
+            }
         }
         /// <summary>
         /// 发送消息
         /// </summary>
-        /// <typeparam name="TIn"></typeparam>
-        /// <param name="queueName"></param>
-        /// <param name="value"></param>
-        /// <param name="routingKey">路由Key，可为空</param>
-        public void Publish<TIn>(string queueName, TIn value, string routingKey = "")
+        /// <typeparam name="TMessage"></typeparam>
+        /// <param name="exchangeName">留空则使用默认的交换机</param>
+        /// <param name="queueName">队列名</param>
+        /// <param name="value">需要发送的消息</param>
+        /// <param name="routingKey">路由Key</param>
+        public void Publish<TMessage>(string exchangeName, string queueName, TMessage value, string routingKey)
         {
-            if (!_isBinding || !Queues.Contains(queueName))
+            using (IModel channel = Binding(exchangeName ?? _config.ExchangeName, queueName, routingKey))
             {
-                Binding(queueName, routingKey);
+                var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
+                IBasicProperties properties = null;
+                if (_config.Persistence)
+                {
+                    properties = channel.CreateBasicProperties();
+                    properties.Persistent = true;
+                }
+                channel.BasicPublish(exchangeName ?? _config.ExchangeName, routingKey, properties, sendBytes);
             }
-            var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
-            _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
+        }
+
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <typeparam name="TMessage"><see cref="QueueAttribute"/>标识的类</typeparam>
+        /// <param name="value">需要发送的消息</param>
+        public void Publish<TMessage>(TMessage value)
+        {
+            var messageType = typeof(TMessage);
+            var queue = messageType.GetQueue();
+            Publish(queue.ExchangeName, queue.QueueName, value, queue.RoutingKey ?? "");
         }
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="exchangeName"></param>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private void Binding(string queueName, string routingKey = "")
+        private IModel Binding(string exchangeName, string queueName, string routingKey)
         {
-            _factory.Channel.QueueUnbind(queueName, _config.ExchangeName, routingKey);
-            _factory.Channel.ExchangeDeclare(_config.ExchangeName, ExchangeType.Direct, false, false, null);
-            _factory.Channel.QueueDeclare(queueName, false, false, false, null);
-            _factory.Channel.QueueBind(queueName, _config.ExchangeName, routingKey, null);
-            _isBinding = true;
-            Queues.Add(queueName);
+            var channel = _factory.GetConnection.CreateModel();
+            channel.QueueUnbind(queueName, exchangeName ?? _config.ExchangeName, routingKey);
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, false, false, null);
+            channel.QueueDeclare(queueName, _config.Persistence, false, false, null);
+            channel.QueueBind(queueName, exchangeName ?? _config.ExchangeName, routingKey, null);
+            return channel;
         }
     }
 }

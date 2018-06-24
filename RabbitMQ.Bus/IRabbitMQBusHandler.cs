@@ -5,14 +5,14 @@ namespace RabbitMQ.Bus
     /// <summary>
     /// 
     /// </summary>
-    /// <typeparam name="TIn"></typeparam>
-    public interface IRabbitMQBusHandler<TIn>
+    /// <typeparam name="TMessage"></typeparam>
+    public interface IRabbitMQBusHandler<TMessage>
     {
         /// <summary>
-        /// 
+        /// 消息处理
         /// </summary>
-        /// <param name="obj"></param>
+        /// <param name="message">接收到的消息</param>
         /// <returns></returns>
-        Task Handle(TIn obj);
+        Task Handle(TMessage message);
     }
 }
