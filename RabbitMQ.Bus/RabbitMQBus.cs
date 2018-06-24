@@ -15,7 +15,6 @@ namespace RabbitMQ.Bus
     {
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
-        private bool _isBinding = false;
         /// <summary>
         /// 现有队列
         /// </summary>
@@ -77,10 +76,11 @@ namespace RabbitMQ.Bus
         /// <param name="routingKey">路由Key</param>
         public void Publish<TMessage>(string queueName, TMessage value, string routingKey)
         {
-            if (!_isBinding || !Queues.Contains(queueName))
+            if (!Queues.Contains(queueName))
             {
                 Binding(queueName, routingKey);
             }
+
             var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
             _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
         }
@@ -92,10 +92,9 @@ namespace RabbitMQ.Bus
         private void Binding(string queueName, string routingKey)
         {
             _factory.Channel.QueueUnbind(queueName, _config.ExchangeName, routingKey);
-            _factory.Channel.ExchangeDeclare(_config.ExchangeName, ExchangeType.Direct, false, false, null);
+            _factory.Channel.ExchangeDeclare(_config.ExchangeName, _config.ExchangeType, false, false, null);
             _factory.Channel.QueueDeclare(queueName, false, false, false, null);
             _factory.Channel.QueueBind(queueName, _config.ExchangeName, routingKey, null);
-            _isBinding = true;
             Queues.Add(queueName);
         }
     }

@@ -24,6 +24,10 @@ namespace RabbitMQ.Bus
         /// </summary>
         public string ExchangeName { private set; get; }
         /// <summary>
+        /// <see cref="RabbitMQ.Client.ExchangeType"/>
+        /// </summary>
+        public string ExchangeType { private set; get; }
+        /// <summary>
         /// 
         /// </summary>
         protected RabbitMQConfig()
@@ -34,46 +38,54 @@ namespace RabbitMQ.Bus
         /// 
         /// </summary>
         /// <param name="connectionString">连接字符串（例：amqp://guest:guest@172.0.0.1:5672/）</param>
-        public RabbitMQConfig(string connectionString) : this()
+        /// <param name="exchangeType"><see cref="RabbitMQ.Client.ExchangeType"/></param>
+        public RabbitMQConfig(string connectionString, string exchangeType) : this()
         {
             ConnectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             AutomaticRecoveryEnabled = true;
+            ExchangeType = exchangeType;
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5);
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="connectionString">连接字符串（例：amqp://guest:guest@172.0.0.1:5672/）</param>
+        /// <param name="exchangeType"><see cref="RabbitMQ.Client.ExchangeType"/></param>
         /// <param name="automaticRecoveryEnabled">是否开启网络自动恢复</param>
-        public RabbitMQConfig(string connectionString, bool automaticRecoveryEnabled) : this()
+        public RabbitMQConfig(string connectionString, string exchangeType, bool automaticRecoveryEnabled) : this()
         {
             ConnectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             AutomaticRecoveryEnabled = automaticRecoveryEnabled;
+            ExchangeType = exchangeType;
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5);
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="connectionString">连接字符串（例：amqp://guest:guest@172.0.0.1:5672/）</param>
+        /// <param name="exchangeType"><see cref="RabbitMQ.Client.ExchangeType"/></param>
         /// <param name="automaticRecoveryEnabled">是否开启网络自动恢复</param>
         /// <param name="networkRecoveryInterval">网络自动恢复时间间隔</param>
-        public RabbitMQConfig(string connectionString, bool automaticRecoveryEnabled, TimeSpan networkRecoveryInterval) : this()
+        public RabbitMQConfig(string connectionString, string exchangeType, bool automaticRecoveryEnabled, TimeSpan networkRecoveryInterval) : this()
         {
             ConnectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             AutomaticRecoveryEnabled = automaticRecoveryEnabled;
+            ExchangeType = exchangeType;
             NetworkRecoveryInterval = networkRecoveryInterval;
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="connectionString">连接字符串（例：amqp://guest:guest@172.0.0.1:5672/）</param>
+        /// <param name="exchangeType"><see cref="RabbitMQ.Client.ExchangeType"/></param>
         /// <param name="automaticRecoveryEnabled">是否开启网络自动恢复</param>
         /// <param name="networkRecoveryInterval">网络自动恢复时间间隔</param>
         /// <param name="exchangeName">默认名称：Default.RabbitMQBus.Exchange</param>
-        public RabbitMQConfig(string connectionString, bool automaticRecoveryEnabled, TimeSpan networkRecoveryInterval, string exchangeName)
+        public RabbitMQConfig(string connectionString, string exchangeType, bool automaticRecoveryEnabled, TimeSpan networkRecoveryInterval, string exchangeName)
         {
             ConnectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             AutomaticRecoveryEnabled = automaticRecoveryEnabled;
+            ExchangeType = exchangeType;
             NetworkRecoveryInterval = networkRecoveryInterval;
             ExchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
         }
