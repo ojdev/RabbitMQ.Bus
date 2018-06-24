@@ -23,8 +23,8 @@ namespace Microsoft.Extensions.DependencyInjection
             if (connectionString.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(connectionString));
             var config = new RabbitMQConfig(connectionString);
             actionSetup?.Invoke(config);
-            services.AddSingleton(options => new RabbitMQBusService(config));
-            var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>)))).ToArray();
+            services.AddSingleton(options => new RabbitMQBusService(options, config));
+            var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler)))).ToArray();
             foreach (var handleType in allhandles)
             {
                 services.AddScoped(handleType);
