@@ -2,6 +2,7 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using RabbitMQ.Bus.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,11 +28,15 @@ namespace RabbitMQ.Bus
         {
             Queues = new List<string>();
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _factory = new RabbitMQBusFactory();
-            _factory.ConnectionFactory = new ConnectionFactory();
-            _factory.ConnectionFactory.AutomaticRecoveryEnabled = config.AutomaticRecoveryEnabled;
-            _factory.ConnectionFactory.NetworkRecoveryInterval = config.NetworkRecoveryInterval;
-            _factory.ConnectionFactory.Uri = new Uri(config.ConnectionString);
+            _factory = new RabbitMQBusFactory
+            {
+                ConnectionFactory = new ConnectionFactory
+                {
+                    AutomaticRecoveryEnabled = config.AutomaticRecoveryEnabled,
+                    NetworkRecoveryInterval = config.NetworkRecoveryInterval,
+                    Uri = new Uri(config.ConnectionString)
+                }
+            };
             _factory.GetConnection = _factory.ConnectionFactory.CreateConnection();
             _factory.Channel = _factory.GetConnection.CreateModel();
         }
@@ -42,11 +47,8 @@ namespace RabbitMQ.Bus
         public void Subscribe<TMessage>() where TMessage : class
         {
             var messageType = typeof(TMessage);
-            var messageAttribute = messageType.GetCustomAttributes(typeof(QueueAttribute), true).FirstOrDefault();
-            if (messageAttribute == null)
-            {
-                throw new ArgumentNullException($"{messageType.Name}缺少{nameof(QueueAttribute)}标识。");
-            }
+            var queue = messageType.GetQueueName();
+
             EventingBasicConsumer _consumer = new EventingBasicConsumer(_factory.Channel);
             _consumer.Received += (ch, ea) =>
             {
@@ -65,7 +67,7 @@ namespace RabbitMQ.Bus
                 }
                 _factory.Channel.BasicAck(ea.DeliveryTag, false);
             };
-            _factory.Channel.BasicConsume((messageAttribute as QueueAttribute).QueueName, false, _consumer);
+            _factory.Channel.BasicConsume(queue.QueueName, false, _consumer);
         }
         /// <summary>
         /// 发送消息
@@ -84,14 +86,49 @@ namespace RabbitMQ.Bus
             var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
             _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
         }
+
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="routingKey">路由Key</param>
+        public void Publish<TMessage>(TMessage value, string routingKey)
+        {
+            var messageType = typeof(TMessage);
+            var queue = messageType.GetQueueName();
+
+            if (!Queues.Contains(queue.QueueName))
+            {
+                if (queue.ExchangeName.IsNullOrWhiteSpace())
+                {
+                    Binding(queue.QueueName, routingKey);
+                }
+                else
+                {
+                    Binding(queue.ExchangeName, queue.QueueName, routingKey);
+                }
+
+            }
+
+            var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
+            _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
+        }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private void Binding(string queueName, string routingKey)
+        private void Binding(string queueName, string routingKey) => Binding(_config.ExchangeName, queueName, routingKey);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="exchangeName"></param>
+        /// <param name="queueName"></param>
+        /// <param name="routingKey"></param>
+        private void Binding(string exchangeName, string queueName, string routingKey)
         {
-            _factory.Channel.QueueUnbind(queueName, _config.ExchangeName, routingKey);
+            _factory.Channel.QueueUnbind(queueName, exchangeName, routingKey);
             _factory.Channel.ExchangeDeclare(_config.ExchangeName, _config.ExchangeType, false, false, null);
             _factory.Channel.QueueDeclare(queueName, false, false, false, null);
             _factory.Channel.QueueBind(queueName, _config.ExchangeName, routingKey, null);

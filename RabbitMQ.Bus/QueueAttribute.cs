@@ -15,12 +15,17 @@ namespace RabbitMQ.Bus
         /// </summary>
         public string QueueName { get; }
         /// <summary>
+        /// 交换机名
+        /// </summary>
+        public string ExchangeName { get; set; }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="queueName">队列名</param>
         public QueueAttribute(string queueName)
         {
-            QueueName = queueName;
+            string.IsNullOrWhiteSpace()
+               QueueName = queueName;
         }
     }
 }
