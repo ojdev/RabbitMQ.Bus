@@ -53,7 +53,12 @@ namespace RabbitMQ.Bus
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += async (ch, ea) =>
             {
-                var allhandles = (IEnumerable<IRabbitMQBusHandler>)_serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
+                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
+                if (serviceObject == null)
+                {
+                    return;
+                }
+                var allhandles = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
 
                 var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
                 if (thisMessageTypeHandlers.Count() == 0)
@@ -84,10 +89,17 @@ namespace RabbitMQ.Bus
         public void AutoSubscribe()
         {
             var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Length > 0)).ToArray();
+            
             foreach (var queueType in allQueue)
             {
                 var genericType = typeof(IRabbitMQBusHandler<>).MakeGenericType(queueType);
-                var allHandler = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(genericType))).ToArray();
+                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(genericType));
+                if (serviceObject == null)
+                {
+                    continue;
+                }
+                var allHandler = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
+
                 if (allHandler.Count() == 0)
                 {
                     continue;
@@ -100,9 +112,9 @@ namespace RabbitMQ.Bus
                 {
                     var messageBody = Encoding.UTF8.GetString(ea.Body);
                     var message = JsonConvert.DeserializeObject(messageBody, queueType);
-                    foreach (var handleType in allHandler)
+                    foreach (var handler in allHandler)
                     {
-                        var handler = Activator.CreateInstance(handleType);
+                        var handleType = handler.GetType();
                         var method = handleType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle));
                         method.Invoke(handler, new object[] { message });
                     }
