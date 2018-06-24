@@ -17,7 +17,6 @@ namespace RabbitMQ.Bus
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
         private IServiceProvider _serviceProvider;
-        private RabbitMQConfig config;
 
         /// <summary>
         /// 
@@ -26,7 +25,7 @@ namespace RabbitMQ.Bus
         /// <param name="serviceProvider"></param>
         public RabbitMQBusService(IServiceProvider serviceProvider, RabbitMQConfig config)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(config));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _factory = new RabbitMQBusFactory
             {
@@ -52,12 +51,11 @@ namespace RabbitMQ.Bus
             IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
 
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
-            _consumer.Received += async  (ch, ea) =>
+            _consumer.Received += async (ch, ea) =>
             {
                 var allhandles = (IEnumerable<IRabbitMQBusHandler>)_serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
-                
-                var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
 
+                var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
                 if (thisMessageTypeHandlers.Count() == 0)
                 {
                     Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
@@ -65,7 +63,7 @@ namespace RabbitMQ.Bus
                 }
                 var messageBody = Encoding.UTF8.GetString(ea.Body);
                 TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
-                
+
                 foreach (var handler in thisMessageTypeHandlers)
                 {
                     try

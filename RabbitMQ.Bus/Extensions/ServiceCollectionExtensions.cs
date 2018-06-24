@@ -24,10 +24,10 @@ namespace Microsoft.Extensions.DependencyInjection
             var config = new RabbitMQConfig(connectionString);
             actionSetup?.Invoke(config);
             services.AddSingleton(options => new RabbitMQBusService(options, config));
-            var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler)))).ToArray();
+            var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => !t.IsInterface).Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler)))).ToArray();
             foreach (var handleType in allhandles)
             {
-                services.AddScoped(handleType);
+                services.AddScoped(typeof(IRabbitMQBusHandler<>), handleType);
             }
             return services;
         }
