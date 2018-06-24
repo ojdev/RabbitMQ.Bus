@@ -14,11 +14,15 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Version>0.0.2</Version>
     <RepositoryType>github</RepositoryType>
-    <PackageIconUrl>https://github.com/ojdev/RabbitMQ.Bus/rabbitmq.bus.png</PackageIconUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/ojdev/RabbitMQ.Bus/master/rabbitmq.bus.png</PackageIconUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.0\RabbitMQ.Bus.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\RabbitMQ.Bus.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
