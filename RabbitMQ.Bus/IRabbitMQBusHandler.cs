@@ -6,7 +6,7 @@ namespace RabbitMQ.Bus
     /// 
     /// </summary>
     /// <typeparam name="TMessage"></typeparam>
-    public interface IRabbitMQBusHandler<TMessage>
+    public interface IRabbitMQBusHandler<TMessage> : IRabbitMQBusHandler
     {
         /// <summary>
         /// 消息处理
@@ -14,5 +14,11 @@ namespace RabbitMQ.Bus
         /// <param name="message">接收到的消息</param>
         /// <returns></returns>
         Task Handle(TMessage message);
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public interface IRabbitMQBusHandler
+    {
     }
 }
