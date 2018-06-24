@@ -16,12 +16,17 @@ namespace RabbitMQ.Bus
     {
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
+        private IServiceProvider _serviceProvider;
+        private RabbitMQConfig config;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="config"></param>
-        public RabbitMQBusService(RabbitMQConfig config)
+        /// <param name="serviceProvider"></param>
+        public RabbitMQBusService(IServiceProvider serviceProvider, RabbitMQConfig config)
         {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(config));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _factory = new RabbitMQBusFactory
             {
@@ -34,6 +39,7 @@ namespace RabbitMQ.Bus
             };
             _factory.GetConnection = _factory.ConnectionFactory.CreateConnection();
         }
+
         /// <summary>
         /// 订阅消息
         /// </summary>
@@ -46,20 +52,29 @@ namespace RabbitMQ.Bus
             IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
 
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
-            _consumer.Received += (ch, ea) =>
+            _consumer.Received += async  (ch, ea) =>
             {
-                var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<TMessage>)))).ToArray();
-                if (allhandles.Count() == 0)
+                var allhandles = (IEnumerable<IRabbitMQBusHandler>)_serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
+                
+                var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
+
+                if (thisMessageTypeHandlers.Count() == 0)
                 {
                     Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
+                    return;
                 }
                 var messageBody = Encoding.UTF8.GetString(ea.Body);
                 TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
-                foreach (var handleType in allhandles)
+                
+                foreach (var handler in thisMessageTypeHandlers)
                 {
-                    var handler = (IRabbitMQBusHandler<TMessage>)Activator.CreateInstance(handleType);
-                    handler.Handle(message).Wait();
-                    handler = null;
+                    try
+                    {
+                        await handler.Handle(message);
+                    }
+                    catch
+                    {
+                    }
                 }
                 channel.BasicAck(ea.DeliveryTag, false);
             };
