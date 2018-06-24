@@ -15,7 +15,7 @@ namespace RabbitMQ.Bus.Extensions
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static QueueAttribute GetQueueName(this Type type)
+        public static QueueAttribute GetQueue(this Type type)
         {
             var messageAttribute = type.GetCustomAttributes(typeof(QueueAttribute), true).FirstOrDefault();
             if (messageAttribute == null)

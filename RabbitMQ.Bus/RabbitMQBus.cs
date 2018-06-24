@@ -17,16 +17,11 @@ namespace RabbitMQ.Bus
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
         /// <summary>
-        /// 现有队列
-        /// </summary>
-        public List<string> Queues { set; get; }
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="config"></param>
         public RabbitMQBusService(RabbitMQConfig config)
         {
-            Queues = new List<string>();
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _factory = new RabbitMQBusFactory
             {
@@ -38,7 +33,6 @@ namespace RabbitMQ.Bus
                 }
             };
             _factory.GetConnection = _factory.ConnectionFactory.CreateConnection();
-            _factory.Channel = _factory.GetConnection.CreateModel();
         }
         /// <summary>
         /// 订阅消息
@@ -47,9 +41,11 @@ namespace RabbitMQ.Bus
         public void Subscribe<TMessage>() where TMessage : class
         {
             var messageType = typeof(TMessage);
-            var queue = messageType.GetQueueName();
+            var queue = messageType.GetQueue();
 
-            EventingBasicConsumer _consumer = new EventingBasicConsumer(_factory.Channel);
+            IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+
+            EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += (ch, ea) =>
             {
                 var allhandles = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<TMessage>)))).ToArray();
@@ -65,74 +61,91 @@ namespace RabbitMQ.Bus
                     handler.Handle(message).Wait();
                     handler = null;
                 }
-                _factory.Channel.BasicAck(ea.DeliveryTag, false);
+                channel.BasicAck(ea.DeliveryTag, false);
             };
-            _factory.Channel.BasicConsume(queue.QueueName, false, _consumer);
+            channel.BasicConsume(queue.QueueName, true, _consumer);
         }
         /// <summary>
-        /// 发送消息
+        /// 自动订阅消息
         /// </summary>
-        /// <typeparam name="TMessage"></typeparam>
-        /// <param name="queueName"></param>
-        /// <param name="value"></param>
-        /// <param name="routingKey">路由Key</param>
-        public void Publish<TMessage>(string queueName, TMessage value, string routingKey)
+        public void AutoSubscribe()
         {
-            if (!Queues.Contains(queueName))
+            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Length > 0)).ToArray();
+            foreach (var queueType in allQueue)
             {
-                Binding(queueName, routingKey);
-            }
+                var genericType = typeof(IRabbitMQBusHandler<>).MakeGenericType(queueType);
+                var allHandler = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(genericType))).ToArray();
+                if (allHandler.Count() == 0)
+                {
+                    continue;
+                }
 
-            var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
-            _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
+                var queue = queueType.GetQueue();
+                IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+                EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
+                _consumer.Received += (ch, ea) =>
+                {
+                    var messageBody = Encoding.UTF8.GetString(ea.Body);
+                    var message = JsonConvert.DeserializeObject(messageBody, queueType);
+                    foreach (var handleType in allHandler)
+                    {
+                        var handler = Activator.CreateInstance(handleType);
+                        var method = handleType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle));
+                        method.Invoke(handler, new object[] { message });
+                    }
+                    channel.BasicAck(ea.DeliveryTag, false);
+                };
+                channel.BasicConsume(queue.QueueName, false, _consumer);
+            }
+        }
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        /// <param name="exchangeName">留空则使用默认的交换机</param>
+        /// <param name="queueName">队列名</param>
+        /// <param name="value">需要发送的消息</param>
+        /// <param name="routingKey">路由Key</param>
+        public void Publish<TMessage>(string exchangeName, string queueName, TMessage value, string routingKey)
+        {
+            using (IModel channel = Binding(exchangeName ?? _config.ExchangeName, queueName, routingKey))
+            {
+                var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
+                IBasicProperties properties = null;
+                if (_config.Persistence)
+                {
+                    properties = channel.CreateBasicProperties();
+                    properties.Persistent = true;
+                }
+                channel.BasicPublish(exchangeName ?? _config.ExchangeName, routingKey, properties, sendBytes);
+            }
         }
 
         /// <summary>
         /// 发送消息
         /// </summary>
-        /// <typeparam name="TMessage"></typeparam>
-        /// <param name="value"></param>
-        /// <param name="routingKey">路由Key</param>
-        public void Publish<TMessage>(TMessage value, string routingKey)
+        /// <typeparam name="TMessage"><see cref="QueueAttribute"/>标识的类</typeparam>
+        /// <param name="value">需要发送的消息</param>
+        public void Publish<TMessage>(TMessage value)
         {
             var messageType = typeof(TMessage);
-            var queue = messageType.GetQueueName();
-
-            if (!Queues.Contains(queue.QueueName))
-            {
-                if (queue.ExchangeName.IsNullOrWhiteSpace())
-                {
-                    Binding(queue.QueueName, routingKey);
-                }
-                else
-                {
-                    Binding(queue.ExchangeName, queue.QueueName, routingKey);
-                }
-
-            }
-
-            var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
-            _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
+            var queue = messageType.GetQueue();
+            Publish(queue.ExchangeName, queue.QueueName, value, queue.RoutingKey ?? "");
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="queueName"></param>
-        /// <param name="routingKey"></param>
-        private void Binding(string queueName, string routingKey) => Binding(_config.ExchangeName, queueName, routingKey);
         /// <summary>
         /// 
         /// </summary>
         /// <param name="exchangeName"></param>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private void Binding(string exchangeName, string queueName, string routingKey)
+        private IModel Binding(string exchangeName, string queueName, string routingKey)
         {
-            _factory.Channel.QueueUnbind(queueName, exchangeName, routingKey);
-            _factory.Channel.ExchangeDeclare(_config.ExchangeName, _config.ExchangeType, false, false, null);
-            _factory.Channel.QueueDeclare(queueName, false, false, false, null);
-            _factory.Channel.QueueBind(queueName, _config.ExchangeName, routingKey, null);
-            Queues.Add(queueName);
+            var channel = _factory.GetConnection.CreateModel();
+            channel.QueueUnbind(queueName, exchangeName ?? _config.ExchangeName, routingKey);
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, false, false, null);
+            channel.QueueDeclare(queueName, _config.Persistence, false, false, null);
+            channel.QueueBind(queueName, exchangeName ?? _config.ExchangeName, routingKey, null);
+            return channel;
         }
     }
 }

@@ -19,10 +19,21 @@ namespace RabbitMQ.Bus
         /// </summary>
         public string ExchangeName { get; set; }
         /// <summary>
+        /// 路由Key
+        /// </summary>
+        public string RoutingKey { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        protected QueueAttribute()
+        {
+            RoutingKey = "";
+        }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="queueName">队列名</param>
-        public QueueAttribute(string queueName)
+        public QueueAttribute(string queueName) : this()
         {
             QueueName = queueName;
         }
