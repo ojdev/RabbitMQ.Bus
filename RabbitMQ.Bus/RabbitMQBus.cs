@@ -63,13 +63,13 @@ namespace RabbitMQ.Bus
         /// <param name="queueName"></param>
         /// <param name="value"></param>
         /// <param name="routingKey">路由Key，可为空</param>
-        public void Publish<TMessage>(string queueName, TMessage value, string routingKey = "")
+        public void Publish<TMessage>(string queueName, TMessage value, string routingKey)
         {
             if (!Queues.Contains(queueName))
             {
                 Binding(queueName, routingKey);
             }
-            
+
             var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
             _factory.Channel.BasicPublish(_config.ExchangeName, routingKey, null, sendBytes);
         }
@@ -78,7 +78,7 @@ namespace RabbitMQ.Bus
         /// </summary>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private void Binding(string queueName, string routingKey = "")
+        private void Binding(string queueName, string routingKey)
         {
             _factory.Channel.QueueUnbind(queueName, _config.ExchangeName, routingKey);
             _factory.Channel.ExchangeDeclare(_config.ExchangeName, _config.ExchangeType, false, false, null);
