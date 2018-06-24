@@ -6,6 +6,7 @@ using RabbitMQ.Bus.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace RabbitMQ.Bus
 {
@@ -49,18 +50,11 @@ namespace RabbitMQ.Bus
             var queue = messageType.GetQueue();
 
             IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
-
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += async (ch, ea) =>
             {
-                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
-                if (serviceObject == null)
-                {
-                    return;
-                }
-                var allhandles = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
-
-                var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
+                var serviceObject = _serviceProvider.GetService<IEnumerable<IRabbitMQBusHandler>>();
+                var thisMessageTypeHandlers = serviceObject.OfType<IRabbitMQBusHandler<TMessage>>();
                 if (thisMessageTypeHandlers.Count() == 0)
                 {
                     Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
@@ -82,46 +76,6 @@ namespace RabbitMQ.Bus
                 channel.BasicAck(ea.DeliveryTag, false);
             };
             channel.BasicConsume(queue.QueueName, true, _consumer);
-        }
-        /// <summary>
-        /// 自动订阅消息
-        /// </summary>
-        public void AutoSubscribe()
-        {
-            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Length > 0)).ToArray();
-            
-            foreach (var queueType in allQueue)
-            {
-                var genericType = typeof(IRabbitMQBusHandler<>).MakeGenericType(queueType);
-                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<>).MakeGenericType(genericType));
-                if (serviceObject == null)
-                {
-                    continue;
-                }
-                var allHandler = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
-
-                if (allHandler.Count() == 0)
-                {
-                    continue;
-                }
-
-                var queue = queueType.GetQueue();
-                IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
-                EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
-                _consumer.Received += (ch, ea) =>
-                {
-                    var messageBody = Encoding.UTF8.GetString(ea.Body);
-                    var message = JsonConvert.DeserializeObject(messageBody, queueType);
-                    foreach (var handler in allHandler)
-                    {
-                        var handleType = handler.GetType();
-                        var method = handleType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle));
-                        method.Invoke(handler, new object[] { message });
-                    }
-                    channel.BasicAck(ea.DeliveryTag, false);
-                };
-                channel.BasicConsume(queue.QueueName, false, _consumer);
-            }
         }
         /// <summary>
         /// 发送消息
