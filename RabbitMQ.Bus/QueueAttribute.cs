@@ -24,8 +24,7 @@ namespace RabbitMQ.Bus
         /// <param name="queueName">队列名</param>
         public QueueAttribute(string queueName)
         {
-            string.IsNullOrWhiteSpace()
-               QueueName = queueName;
+            QueueName = queueName;
         }
     }
 }
