@@ -6,6 +6,7 @@ using RabbitMQ.Bus.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Bus
 {
@@ -52,26 +53,24 @@ namespace RabbitMQ.Bus
             IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
 
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
-            _consumer.Received += async  (ch, ea) =>
+            _consumer.Received += async (ch, ea) =>
             {
-                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler>));
+                var serviceObject = _serviceProvider.GetService(typeof(IEnumerable<IRabbitMQBusHandler<TMessage>>));
                 if (serviceObject == null)
                 {
                     return;
                 }
-                var allhandles = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
+                var allhandles = (IEnumerable<IRabbitMQBusHandler<TMessage>>)serviceObject;
 
-                var thisMessageTypeHandlers = allhandles.OfType<IRabbitMQBusHandler<TMessage>>();
-
-                if (thisMessageTypeHandlers.Count() == 0)
+                if (!allhandles.Any())
                 {
                     Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
                     return;
                 }
                 var messageBody = Encoding.UTF8.GetString(ea.Body);
                 TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
-                
-                foreach (var handler in thisMessageTypeHandlers)
+
+                foreach (var handler in allhandles)
                 {
                     try
                     {
@@ -90,8 +89,8 @@ namespace RabbitMQ.Bus
         /// </summary>
         public void AutoSubscribe()
         {
-            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Length > 0)).ToArray();
-            
+            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToArray();
+
             foreach (var queueType in allQueue)
             {
                 var genericType = typeof(IRabbitMQBusHandler<>).MakeGenericType(queueType);
@@ -102,7 +101,7 @@ namespace RabbitMQ.Bus
                 }
                 var allHandler = (IEnumerable<IRabbitMQBusHandler>)serviceObject;
 
-                if (allHandler.Count() == 0)
+                if (!allHandler.Any())
                 {
                     continue;
                 }
@@ -110,21 +109,41 @@ namespace RabbitMQ.Bus
                 var queue = queueType.GetQueue();
                 IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
                 EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
-                _consumer.Received += (ch, ea) =>
+                _consumer.Received += async (ch, ea) =>
                 {
                     var messageBody = Encoding.UTF8.GetString(ea.Body);
                     var message = JsonConvert.DeserializeObject(messageBody, queueType);
-                    foreach (var handler in allHandler)
-                    {
-                        var handleType = handler.GetType();
-                        var method = handleType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle));
-                        method.Invoke(handler, new object[] { message });
-                    }
+                    await ProcessMessageAsync(queueType, message, genericType, allHandler);
                     channel.BasicAck(ea.DeliveryTag, false);
                 };
                 channel.BasicConsume(queue.QueueName, false, _consumer);
             }
         }
+        /// <summary>
+        /// 处理消息
+        /// </summary>
+        /// <param name="messageType"></param>
+        /// <param name="message"></param>
+        /// <param name="handlerType"></param>
+        /// <param name="handlers"></param>
+        /// <returns></returns>
+        public async Task ProcessMessageAsync(Type messageType, object message, Type handlerType, IEnumerable<IRabbitMQBusHandler> handlers)
+        {
+            var method = handlerType.GetMethod(nameof(IRabbitMQBusHandler<Object>.Handle), new[] { messageType });
+            if (method == null)
+            {
+                return;
+            }
+            var tasks = new List<Task>();
+
+            foreach (var handler in handlers)
+            {
+                var task = (Task)method.Invoke(handler, new object[] { message });
+                tasks.Add(task);
+            }
+            await Task.WhenAll(tasks);
+        }
+
         /// <summary>
         /// 发送消息
         /// </summary>
