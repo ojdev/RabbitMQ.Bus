@@ -1,9 +1,8 @@
 ﻿using RabbitMQ.Bus;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using RabbitMQ.Bus.Extensions;
+using System;
+using System.Linq;
+
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
@@ -23,23 +22,19 @@ namespace Microsoft.Extensions.DependencyInjection
             if (connectionString.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(connectionString));
             var config = new RabbitMQConfig(connectionString);
             actionSetup?.Invoke(config);
-            services.AddSingleton(options => new RabbitMQBusService(options, config));
-            ServiceLoctor.Handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => !t.IsInterface).Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler)))).ToList();
-            foreach (var handleType in ServiceLoctor.Handlers)
+            services.AddSingleton(options => new RabbitMQBusService(config));
+            var messageTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToList();
+            foreach (var messageType in messageTypes)
             {
-                services.AddScoped(typeof(IRabbitMQBusHandler), handleType);
+                var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToList();
+
+                foreach (var handleType in handlers)
+                {
+                    Console.WriteLine(handleType);
+                    services.AddScoped(handleType);
+                }
             }
             return services;
         }
-    }
-    /// <summary>
-    /// 
-    /// </summary>
-    public static class ServiceLoctor
-    {
-        /// <summary>
-        /// 
-        /// </summary>
-        public static List<Type> Handlers = new List<Type>();
     }
 }

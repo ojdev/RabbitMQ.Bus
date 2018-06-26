@@ -1,12 +1,11 @@
 ﻿using Newtonsoft.Json;
+using RabbitMQ.Bus.Extensions;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
-using RabbitMQ.Bus.Extensions;
-using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace RabbitMQ.Bus
 {
@@ -17,16 +16,16 @@ namespace RabbitMQ.Bus
     {
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
-        private IServiceProvider _serviceProvider;
-
+        /// <summary>
+        /// 
+        /// </summary>
+        public event EventHandler<MessageContext> OnMessageReceived;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="config"></param>
-        /// <param name="serviceProvider"></param>
-        public RabbitMQBusService(IServiceProvider serviceProvider, RabbitMQConfig config)
+        public RabbitMQBusService(RabbitMQConfig config)
         {
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _factory = new RabbitMQBusFactory
             {
@@ -53,29 +52,57 @@ namespace RabbitMQ.Bus
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += async (ch, ea) =>
             {
-                var serviceObject = _serviceProvider.GetService<IEnumerable<IRabbitMQBusHandler>>();
-                var thisMessageTypeHandlers = serviceObject.OfType<IRabbitMQBusHandler<TMessage>>();
-                if (thisMessageTypeHandlers.Count() == 0)
-                {
-                    Console.Error.WriteLine($"找不到实现了IRabbitMQBusHandler<{messageType.Name}>的消息处理类。");
-                    return;
-                }
                 var messageBody = Encoding.UTF8.GetString(ea.Body);
                 TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
-
-                foreach (var handler in thisMessageTypeHandlers)
+                var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToList();
+                foreach (var handleType in handlers)
                 {
-                    try
+                    if (OnMessageReceived != null)
                     {
-                        await handler.Handle(message);
+                        OnMessageReceived?.Invoke(ea, new MessageContext(handleType, message));
                     }
-                    catch
+                    else
                     {
+                        var handle = Activator.CreateInstance(handleType) as IRabbitMQBusHandler<TMessage>;
+                        await handle.Handle(message);
                     }
                 }
                 channel.BasicAck(ea.DeliveryTag, false);
             };
-            channel.BasicConsume(queue.QueueName, true, _consumer);
+            channel.BasicConsume(queue.QueueName, false, _consumer);
+        }
+        /// <summary>
+        /// 自动注册
+        /// </summary>
+        public void AutoSubscribe()
+        {
+            var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToArray();
+            foreach (var messageType in allQueue)
+            {
+                var queue = messageType.GetQueue();
+                IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+                EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
+                _consumer.Received += (ch, ea) =>
+                {
+                    var messageBody = Encoding.UTF8.GetString(ea.Body);
+                    var message = JsonConvert.DeserializeObject(messageBody, messageType);
+                    var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToList();
+                    foreach (var handleType in handlers)
+                    {
+                        if (OnMessageReceived != null)
+                        {
+                            OnMessageReceived?.Invoke(ea, new MessageContext(handleType, message));
+                        }
+                        else
+                        {
+                            var handle = Activator.CreateInstance(handleType);
+                            handleType.InvokeMember("Handle", BindingFlags.Default | BindingFlags.InvokeMethod, null, handle, new[] { message });
+                        }
+                    }
+                    channel.BasicAck(ea.DeliveryTag, false);
+                };
+                channel.BasicConsume(queue.QueueName, false, _consumer);
+            }
         }
         /// <summary>
         /// 发送消息
