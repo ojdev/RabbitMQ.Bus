@@ -41,6 +41,7 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env, RabbitMQ
     {
         app.UseDeveloperExceptionPage();
     }
+
     app.UseRabbitMQBus(true);
     app.UseMvc();
 }
