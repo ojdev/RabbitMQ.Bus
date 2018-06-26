@@ -6,7 +6,7 @@ namespace RabbitMQ.Bus
     /// 
     /// </summary>
     /// <typeparam name="TMessage"></typeparam>
-    public interface IRabbitMQBusHandler<TMessage> : IRabbitMQBusHandler
+    public interface IRabbitMQBusHandler<TMessage>
     {
         /// <summary>
         /// 消息处理
@@ -20,5 +20,11 @@ namespace RabbitMQ.Bus
     /// </summary>
     public interface IRabbitMQBusHandler
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        Task Handle(dynamic message);
     }
 }
