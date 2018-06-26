@@ -50,11 +50,10 @@ namespace RabbitMQ.Bus.Autofac
                     var method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
                     var task = (Task)method.Invoke(handle, new[] { e.Message });
                     await task.ConfigureAwait(false);
-                    //var result = e.HandleType.InvokeMember("Handle", BindingFlags.Default | BindingFlags.InvokeMethod, null, handle, new[] { e.Message });
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    System.Diagnostics.Debug.WriteLine(ex.Message);
                 }
             }
         }

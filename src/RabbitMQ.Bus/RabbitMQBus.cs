@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Bus
 {
@@ -96,7 +97,9 @@ namespace RabbitMQ.Bus
                         else
                         {
                             var handle = Activator.CreateInstance(handleType);
-                            handleType.InvokeMember("Handle", BindingFlags.Default | BindingFlags.InvokeMethod, null, handle, new[] { message });
+                            var method = handleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
+                            var task = (Task)method.Invoke(handle, new[] { message });
+                            task.GetAwaiter().GetResult();
                         }
                     }
                     channel.BasicAck(ea.DeliveryTag, false);
