@@ -2,6 +2,7 @@
 using RabbitMQ.Client.Events;
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Bus.Autofac
 {
@@ -35,7 +36,7 @@ namespace RabbitMQ.Bus.Autofac
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void RabbitMQ_OnMessageReceived(object sender, MessageContext e)
+        private async void RabbitMQ_OnMessageReceived(object sender, MessageContext e)
         {
             using (var scope = _lifetime.BeginLifetimeScope())
             {
@@ -46,7 +47,10 @@ namespace RabbitMQ.Bus.Autofac
                 try
                 {
                     var handle = scope.ResolveOptional(e.HandleType);
-                    e.HandleType.InvokeMember("Handle", BindingFlags.Default | BindingFlags.InvokeMethod, null, handle, new[] { e.Message });
+                    var method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
+                    var task = (Task)method.Invoke(handle, new[] { e.Message });
+                    await task.ConfigureAwait(false);
+                    //var result = e.HandleType.InvokeMember("Handle", BindingFlags.Default | BindingFlags.InvokeMethod, null, handle, new[] { e.Message });
                 }
                 catch (Exception ex)
                 {

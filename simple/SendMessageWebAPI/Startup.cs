@@ -24,26 +24,26 @@ namespace SendMessageWebAPI
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-public IServiceProvider ConfigureServices(IServiceCollection services)
-{
-    services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-    services.AddRabbitMQBus("amqp://guest:guest@127.0.0.1:5672/", options => options.AddAutofac(services));
-    services.AddScoped<SendMessageManager>();
-    var container = new ContainerBuilder();
-    container.Populate(services);
-    return new AutofacServiceProvider(container.Build());
-}
+        public IServiceProvider ConfigureServices(IServiceCollection services)
+        {
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options => options.AddAutofac(services));
+            services.AddScoped<SendMessageManager>();
+            var container = new ContainerBuilder();
+            container.Populate(services);
+            return new AutofacServiceProvider(container.Build());
+        }
 
-// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-public void Configure(IApplicationBuilder app, IHostingEnvironment env, RabbitMQ.Bus.RabbitMQBusService rabbit)
-{
-    if (env.IsDevelopment())
-    {
-        app.UseDeveloperExceptionPage();
-    }
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, RabbitMQ.Bus.RabbitMQBusService rabbit)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
 
-    app.UseRabbitMQBus(true);
-    app.UseMvc();
-}
+            app.UseRabbitMQBus(true);
+            app.UseMvc();
+        }
     }
 }

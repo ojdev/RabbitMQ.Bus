@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\RabbitMQ.Bus.Autofac\RabbitMQ.Bus.Autofac.csproj" />
-    <ProjectReference Include="..\src\RabbitMQ.Bus\RabbitMQ.Bus.csproj" />
+    <ProjectReference Include="..\..\src\RabbitMQ.Bus.Autofac\RabbitMQ.Bus.Autofac.csproj" />
+    <ProjectReference Include="..\..\src\RabbitMQ.Bus\RabbitMQ.Bus.csproj" />
   </ItemGroup>
 
 </Project>
