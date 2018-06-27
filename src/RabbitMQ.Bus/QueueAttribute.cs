@@ -13,7 +13,7 @@ namespace RabbitMQ.Bus
         /// <summary>
         /// 队列名
         /// </summary>
-        public string QueueName { get; }
+        public string QueueName { get; set; }
         /// <summary>
         /// 交换机名
         /// </summary>
@@ -25,17 +25,9 @@ namespace RabbitMQ.Bus
         /// <summary>
         /// 
         /// </summary>
-        protected QueueAttribute()
+        public QueueAttribute()
         {
             RoutingKey = "";
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="queueName">队列名</param>
-        public QueueAttribute(string queueName) : this()
-        {
-            QueueName = queueName;
         }
     }
 }

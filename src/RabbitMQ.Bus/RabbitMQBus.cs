@@ -13,7 +13,7 @@ namespace RabbitMQ.Bus
     /// <summary>
     /// 
     /// </summary>
-    public class RabbitMQBusService
+    public class RabbitMQBusService : IRabbitMQBus
     {
         private readonly RabbitMQBusFactory _factory;
         private readonly RabbitMQConfig _config;
@@ -37,7 +37,7 @@ namespace RabbitMQ.Bus
                     Uri = new Uri(config.ConnectionString)
                 }
             };
-            _factory.GetConnection = _factory.ConnectionFactory.CreateConnection();
+            _factory.GetConnection = _factory.ConnectionFactory.CreateConnection(clientProvidedName: _config.ClientProvidedName);
         }
 
         /// <summary>
@@ -46,16 +46,14 @@ namespace RabbitMQ.Bus
         /// <typeparam name="TMessage"></typeparam>
         public void Subscribe<TMessage>() where TMessage : class
         {
-            var messageType = typeof(TMessage);
-            var queue = messageType.GetQueue();
-
-            IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+            var queue = GetQueue(typeof(TMessage));
+            IModel channel = CreateConsumer(queue.ExchangeName, queue.QueueName, queue.RoutingKey);
             EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += async (ch, ea) =>
             {
                 var messageBody = Encoding.UTF8.GetString(ea.Body);
                 TMessage message = JsonConvert.DeserializeObject<TMessage>(messageBody);
-                var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToList();
+                var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(typeof(TMessage))))).ToList();
                 foreach (var handleType in handlers)
                 {
                     if (OnMessageReceived != null)
@@ -73,15 +71,15 @@ namespace RabbitMQ.Bus
             channel.BasicConsume(queue.QueueName, false, _consumer);
         }
         /// <summary>
-        /// 自动注册
+        /// 自定订阅
         /// </summary>
         public void AutoSubscribe()
         {
             var allQueue = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToArray();
             foreach (var messageType in allQueue)
             {
-                var queue = messageType.GetQueue();
-                IModel channel = Binding(_config.ExchangeName, queue.QueueName, queue.RoutingKey);
+                var queue = GetQueue(messageType);
+                IModel channel = CreateConsumer(queue.ExchangeName, queue.QueueName, queue.RoutingKey);
                 EventingBasicConsumer _consumer = new EventingBasicConsumer(channel);
                 _consumer.Received += (ch, ea) =>
                 {
@@ -111,20 +109,19 @@ namespace RabbitMQ.Bus
         /// 发送消息
         /// </summary>
         /// <typeparam name="TMessage"></typeparam>
-        /// <param name="exchangeName">留空则使用默认的交换机</param>
-        /// <param name="queueName">队列名</param>
         /// <param name="value">需要发送的消息</param>
         /// <param name="routingKey">路由Key</param>
-        public void Publish<TMessage>(string exchangeName, string queueName, TMessage value, string routingKey)
+        /// <param name="exchangeName">留空则使用默认的交换机</param>
+        public void Publish<TMessage>(TMessage value, string routingKey = "", string exchangeName = "")
         {
-            using (IModel channel = Binding(exchangeName ?? _config.ExchangeName, queueName, routingKey))
+            using (IModel channel = CreateProduce(exchangeName ?? _config.ExchangeName, routingKey))
             {
                 var sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
                 IBasicProperties properties = null;
                 if (_config.Persistence)
                 {
                     properties = channel.CreateBasicProperties();
-                    properties.Persistent = true;
+                    properties.DeliveryMode = 2;
                 }
                 channel.BasicPublish(exchangeName ?? _config.ExchangeName, routingKey, properties, sendBytes);
             }
@@ -137,21 +134,41 @@ namespace RabbitMQ.Bus
         /// <param name="value">需要发送的消息</param>
         public void Publish<TMessage>(TMessage value)
         {
-            var messageType = typeof(TMessage);
-            var queue = messageType.GetQueue();
-            Publish(queue.ExchangeName, queue.QueueName, value, queue.RoutingKey ?? "");
+            var queue = GetQueue(typeof(TMessage));
+            Publish(value, queue.RoutingKey ?? "", queue.ExchangeName);
         }
+
+        private (string QueueName, string RoutingKey, string ExchangeName) GetQueue(Type messageType)
+        {
+            var queue = messageType.GetQueue();
+            var exchangeName = queue.ExchangeName ?? _config.ExchangeName;
+            var queueName = queue.QueueName ?? $"{exchangeName}.{messageType.Name}";
+            return (queueName, queue.RoutingKey ?? "", exchangeName);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="exchangeName"></param>
+        /// <param name="routingKey"></param>
+        private IModel CreateProduce(string exchangeName, string routingKey)
+        {
+            var channel = _factory.GetConnection.CreateModel();
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, durable: _config.Persistence, autoDelete: false);
+            return channel;
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="exchangeName"></param>
         /// <param name="queueName"></param>
         /// <param name="routingKey"></param>
-        private IModel Binding(string exchangeName, string queueName, string routingKey)
+        private IModel CreateConsumer(string exchangeName, string queueName, string routingKey)
         {
+
             var channel = _factory.GetConnection.CreateModel();
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, durable: _config.Persistence, autoDelete: false);
             channel.QueueUnbind(queueName, exchangeName ?? _config.ExchangeName, routingKey);
-            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, false, false, null);
             channel.QueueDeclare(queueName, _config.Persistence, false, false, null);
             channel.QueueBind(queueName, exchangeName ?? _config.ExchangeName, routingKey, null);
             return channel;

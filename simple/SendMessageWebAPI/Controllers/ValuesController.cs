@@ -11,8 +11,8 @@ namespace SendMessageWebAPI.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
-        private readonly RabbitMQBusService _rabbit;
-        public ValuesController(RabbitMQBusService rabbit)
+        private readonly IRabbitMQBus _rabbit;
+        public ValuesController(IRabbitMQBus rabbit)
         {
             _rabbit = rabbit;
         }
@@ -20,7 +20,8 @@ namespace SendMessageWebAPI.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            _rabbit.Publish(new SendMessage("发送了一条消息"));
+            //_rabbit.Publish(new { Message="发送了一条消息",routingkey);
+            _rabbit.Publish(new { message = "topic send message." }, routingKey: "send.message",exchangeName: "dev.ex.temp");
             return new string[] { "value1", "value2" };
         }
 
