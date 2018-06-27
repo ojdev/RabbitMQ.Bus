@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton(options =>
             {
                 var lifetime = options.GetRequiredService<ILifetimeScope>();
-                var bus = options.GetRequiredService<RabbitMQBusService>();
+                var bus = options.GetRequiredService<IRabbitMQBus>();
                 return new AutofacMessageReceive(lifetime, bus);
             });
         }
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (autoSubscribe)
             {
-                var bus = app.ApplicationServices.GetRequiredService<RabbitMQBusService>();
+                var bus = app.ApplicationServices.GetRequiredService<IRabbitMQBus>();
                 bus.AutoSubscribe();
             }
             var service = app.ApplicationServices.GetRequiredService<AutofacMessageReceive>();

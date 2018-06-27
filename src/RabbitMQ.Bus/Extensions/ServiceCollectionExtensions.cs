@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (connectionString.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(connectionString));
             var config = new RabbitMQConfig(connectionString);
             actionSetup?.Invoke(config);
-            services.AddSingleton(options => new RabbitMQBusService(config));
+            services.AddSingleton<IRabbitMQBus>(options => new RabbitMQBusService(config));
             var messageTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToList();
             foreach (var messageType in messageTypes)
             {

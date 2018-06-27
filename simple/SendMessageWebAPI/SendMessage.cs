@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Bus;
 namespace SendMessageWebAPI
 {
-    [Queue("dev.test.send",ExchangeName ="dev.ex")]
+    [Queue(ExchangeName = "dev.ex", RoutingKey = "send.#")]
     public class SendMessage
     {
         public string Message { set; get; }

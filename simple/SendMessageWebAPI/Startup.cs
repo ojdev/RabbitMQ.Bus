@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -27,7 +28,12 @@ namespace SendMessageWebAPI
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options => options.AddAutofac(services));
+            services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options =>
+            {
+                options.AddAutofac(services);
+                options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+                options.Persistence = true;
+            });
             services.AddScoped<SendMessageManager>();
             var container = new ContainerBuilder();
             container.Populate(services);
@@ -35,13 +41,12 @@ namespace SendMessageWebAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, RabbitMQ.Bus.RabbitMQBusService rabbit)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseRabbitMQBus(true);
             app.UseMvc();
         }

@@ -21,10 +21,6 @@ namespace RabbitMQ.Bus.Extensions
                 throw new ArgumentNullException($"{type.Name}缺少{nameof(QueueAttribute)}标识。");
             }
             var queueAttribute = (messageAttribute as QueueAttribute);
-            if (string.IsNullOrWhiteSpace(queueAttribute.QueueName))
-            {
-                throw new ArgumentNullException($"{nameof(QueueAttribute)}中的队列名不能为空。");
-            }
             return queueAttribute;
         }
     }

@@ -12,13 +12,13 @@ namespace RabbitMQ.Bus.Autofac
     class AutofacMessageReceive
     {
         private readonly ILifetimeScope _lifetime;
-        private readonly RabbitMQBusService _service;
+        private readonly IRabbitMQBus _service;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="lifetime">Autofac的Lefttime</param>
         /// <param name="service">RabbitMQBus的服务</param>
-        public AutofacMessageReceive(ILifetimeScope lifetime, RabbitMQBusService service)
+        public AutofacMessageReceive(ILifetimeScope lifetime, IRabbitMQBus service)
         {
             _lifetime = lifetime;
             _service = service;
