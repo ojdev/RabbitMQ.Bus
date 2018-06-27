@@ -121,7 +121,6 @@ namespace RabbitMQ.Bus
                 if (_config.Persistence)
                 {
                     properties = channel.CreateBasicProperties();
-                    properties.Persistent = true;
                     properties.DeliveryMode = 2;
                 }
                 channel.BasicPublish(exchangeName ?? _config.ExchangeName, routingKey, properties, sendBytes);
@@ -154,7 +153,7 @@ namespace RabbitMQ.Bus
         private IModel CreateProduce(string exchangeName, string routingKey)
         {
             var channel = _factory.GetConnection.CreateModel();
-            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, _config.Persistence, false, null);
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, durable: _config.Persistence, autoDelete: false);
             return channel;
         }
 
@@ -166,9 +165,11 @@ namespace RabbitMQ.Bus
         /// <param name="routingKey"></param>
         private IModel CreateConsumer(string exchangeName, string queueName, string routingKey)
         {
+
             var channel = _factory.GetConnection.CreateModel();
+            channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, durable: _config.Persistence, autoDelete: false);
             channel.QueueUnbind(queueName, exchangeName ?? _config.ExchangeName, routingKey);
-            channel.QueueDeclare(queueName, true, false, false, null);
+            channel.QueueDeclare(queueName, _config.Persistence, false, false, null);
             channel.QueueBind(queueName, exchangeName ?? _config.ExchangeName, routingKey, null);
             return channel;
         }
