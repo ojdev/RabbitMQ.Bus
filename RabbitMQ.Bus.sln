@@ -9,9 +9,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BEB5BA5C-5DC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Bus", "src\RabbitMQ.Bus\RabbitMQ.Bus.csproj", "{0D72E905-7D21-45AA-BA09-50F84724AA8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Bus.Autofac", "src\RabbitMQ.Bus.Autofac\RabbitMQ.Bus.Autofac.csproj", "{F9E29D5D-BC4C-448E-8E3B-30EF7091628D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Bus.Autofac", "src\RabbitMQ.Bus.Autofac\RabbitMQ.Bus.Autofac.csproj", "{F9E29D5D-BC4C-448E-8E3B-30EF7091628D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SendMessageWebAPI", "simple\SendMessageWebAPI\SendMessageWebAPI.csproj", "{A2FE3701-FB95-4F58-84EE-227861760897}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A465C631-298B-4191-89C0-E0E8787BC674}"
+	ProjectSection(SolutionItems) = preProject
+		CHANGELOG.md = CHANGELOG.md
+		LICENSE = LICENSE
+		rabbitmq.bus.png = rabbitmq.bus.png
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
