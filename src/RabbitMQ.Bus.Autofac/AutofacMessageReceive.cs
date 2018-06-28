@@ -3,7 +3,6 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-
 namespace RabbitMQ.Bus.Autofac
 {
     /// <summary>
@@ -54,6 +53,10 @@ namespace RabbitMQ.Bus.Autofac
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex.Message);
+                }
+                finally
+                {
+                    Console.WriteLine(e.OriginalData);
                 }
             }
         }

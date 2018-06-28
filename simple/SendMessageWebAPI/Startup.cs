@@ -33,6 +33,7 @@ namespace SendMessageWebAPI
                 options.AddAutofac(services);
                 options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
                 options.Persistence = true;
+                options.NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(3);
             });
             services.AddScoped<SendMessageManager>();
             var container = new ContainerBuilder();
@@ -47,7 +48,12 @@ namespace SendMessageWebAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.UseRabbitMQBus(true);
+            Task.Factory.StartNew(async () =>
+            {
+                //为了验证先启动生产者发送消息，后启动消费者消费的情况
+                await Task.Delay(20000);
+                app.UseRabbitMQBus(true);
+            });
             app.UseMvc();
         }
     }

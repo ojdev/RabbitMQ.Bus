@@ -37,6 +37,10 @@ namespace RabbitMQ.Bus
         /// </summary>
         public bool Persistence { get; set; }
         /// <summary>
+        /// 无消费者时消息的重试时间(默认1秒)
+        /// </summary>
+        public TimeSpan NoConsumerMessageRetryInterval { set; get; }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="connectionString">连接字符串（例：amqp://guest:guest@172.0.0.1:5672/）</param>
@@ -45,7 +49,7 @@ namespace RabbitMQ.Bus
                 connectionString,
                 true,
                 TimeSpan.FromSeconds(5),
-                false,
+                true,
                 DEFAULT_EXCHANGE_NAME)
         {
         }
@@ -59,7 +63,7 @@ namespace RabbitMQ.Bus
                 connectionString,
                 automaticRecoveryEnabled,
                 TimeSpan.FromSeconds(5),
-                false,
+                true,
                 DEFAULT_EXCHANGE_NAME)
         {
         }
@@ -74,7 +78,7 @@ namespace RabbitMQ.Bus
                 connectionString,
                 automaticRecoveryEnabled,
                 networkRecoveryInterval,
-                false,
+                true,
                 DEFAULT_EXCHANGE_NAME)
         {
         }
@@ -94,6 +98,7 @@ namespace RabbitMQ.Bus
             NetworkRecoveryInterval = networkRecoveryInterval;
             Persistence = persistence;
             ExchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
+            NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(1);
         }
     }
 }
