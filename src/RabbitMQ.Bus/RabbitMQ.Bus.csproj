@@ -10,10 +10,10 @@
     <PackageLicenseUrl>https://github.com/ojdev/RabbitMQ.Bus/raw/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/ojdev/RabbitMQ.Bus</RepositoryUrl>
     <PackageTags>rqbbitmq,dnc</PackageTags>
-    <AssemblyVersion>0.0.6</AssemblyVersion>
-    <FileVersion>0.0.6</FileVersion>
+    <AssemblyVersion>0.0.7</AssemblyVersion>
+    <FileVersion>0.0.7</FileVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Version>0.0.6</Version>
+    <Version>0.0.7</Version>
     <RepositoryType>github</RepositoryType>
     <PackageIconUrl>https://raw.githubusercontent.com/ojdev/RabbitMQ.Bus/master/rabbitmq.bus.png</PackageIconUrl>
   </PropertyGroup>

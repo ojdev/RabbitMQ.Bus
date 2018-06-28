@@ -5,12 +5,42 @@ using System.Threading.Tasks;
 using RabbitMQ.Bus;
 namespace SendMessageWebAPI
 {
-    [Queue(ExchangeName = "dev.ex.temp", RoutingKey = "send.#")]
+    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
     public class SendMessage
     {
         public string Message { set; get; }
 
         public SendMessage(string message)
+        {
+            Message = message ?? throw new ArgumentNullException(nameof(message));
+        }
+    }
+    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
+    public class SendMessage1
+    {
+        public string Message { set; get; }
+
+        public SendMessage1(string message)
+        {
+            Message = message ?? throw new ArgumentNullException(nameof(message));
+        }
+    }
+    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.#")]
+    public class SendMessage2
+    {
+        public string Message { set; get; }
+
+        public SendMessage2(string message)
+        {
+            Message = message ?? throw new ArgumentNullException(nameof(message));
+        }
+    }
+    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.get")]
+    public class SendMessage3
+    {
+        public string Message { set; get; }
+
+        public SendMessage3(string message)
         {
             Message = message ?? throw new ArgumentNullException(nameof(message));
         }
@@ -28,16 +58,27 @@ namespace SendMessageWebAPI
             return Task.CompletedTask;
         }
     }
-    public class SendMessageHandle1 : IRabbitMQBusHandler<SendMessage>
+    public class SendMessageHandle1 : IRabbitMQBusHandler<SendMessage1>
     {
-        private readonly SendMessageManager manager;
-        public SendMessageHandle1(SendMessageManager sendMessage)
+        public Task Handle(SendMessage1 message)
         {
-            manager = sendMessage;
+            Console.WriteLine(message.Message);
+            return Task.CompletedTask;
         }
-        public Task Handle(SendMessage message)
+    }
+    public class SendMessageHandle2 : IRabbitMQBusHandler<SendMessage2>
+    {
+        public Task Handle(SendMessage2 message)
         {
-            manager.Write(message);
+            Console.WriteLine(message.Message);
+            return Task.CompletedTask;
+        }
+    }
+    public class SendMessageHandle3 : IRabbitMQBusHandler<SendMessage3>
+    {
+        public Task Handle(SendMessage3 message)
+        {
+            Console.WriteLine(message.Message);
             return Task.CompletedTask;
         }
     }
