@@ -1,7 +1,10 @@
 ﻿using Autofac;
+using Butterfly.Client.AspNetCore;
+using Butterfly.Client.Tracing;
 using Microsoft.AspNetCore.Builder;
 using RabbitMQ.Bus;
 using RabbitMQ.Bus.Autofac;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -15,13 +18,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="service"></param>
         /// <param name="services"></param>
-        public static void AddAutofac(this RabbitMQConfig service, IServiceCollection services)
+        /// <param name="butterflySetup"></param>
+        public static void AddAutofac(this RabbitMQConfig service, IServiceCollection services, Action<ButterflyOptions> butterflySetup = null)
         {
+            if (butterflySetup != null)
+            {
+                services.AddButterfly(butterflySetup);
+            }
             services.AddSingleton(options =>
             {
                 var lifetime = options.GetRequiredService<ILifetimeScope>();
                 var bus = options.GetRequiredService<IRabbitMQBus>();
-                return new AutofacMessageReceive(lifetime, bus);
+                IServiceTracer tracer = null;
+                if (butterflySetup != null)
+                    tracer = options.GetRequiredService<IServiceTracer>();
+                return new AutofacMessageReceive(lifetime, bus, tracer);
             });
         }
         /// <summary>

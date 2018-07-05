@@ -1,4 +1,6 @@
 ﻿using Autofac;
+using Butterfly.Client.Tracing;
+using Butterfly.OpenTracing;
 using RabbitMQ.Client.Events;
 using System;
 using System.Reflection;
@@ -12,17 +14,36 @@ namespace RabbitMQ.Bus.Autofac
     {
         private readonly ILifetimeScope _lifetime;
         private readonly IRabbitMQBus _service;
+        private readonly IServiceTracer _tracer;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="lifetime">Autofac的Lefttime</param>
         /// <param name="service">RabbitMQBus的服务</param>
-        public AutofacMessageReceive(ILifetimeScope lifetime, IRabbitMQBus service)
+        /// <param name="tracer">OpenTracer</param>
+        public AutofacMessageReceive(ILifetimeScope lifetime, IRabbitMQBus service, IServiceTracer tracer)
         {
             _lifetime = lifetime;
             _service = service;
+            _tracer = tracer;
             _service.OnMessageReceived += RabbitMQ_OnMessageReceived;
+            _service.OnPublish += RabbitMQ_OnPublish;
         }
+
+        private void RabbitMQ_OnPublish(object sender, OpenTracingMessage e)
+        {
+            if (_tracer != null)
+            {
+                _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.UtcNow, span =>
+                {
+                    span.Tags.Client().Component("RabbitMQ_Publish")
+                    .Set("ExchangeType", _service.Config.ExchangeType)
+                    .Set("ClientProvidedName", _service.Config.ClientProvidedName)
+                    .PeerAddress(_service.Config.ConnectionString);
+                });
+            }
+        }
+
         /// <summary>
         /// 激活
         /// </summary>

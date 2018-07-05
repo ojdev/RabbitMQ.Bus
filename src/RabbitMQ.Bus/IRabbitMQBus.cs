@@ -11,7 +11,15 @@ namespace RabbitMQ.Bus
         /// <summary>
         /// 
         /// </summary>
+        RabbitMQConfig Config { get; }
+        /// <summary>
+        /// 
+        /// </summary>
         event EventHandler<MessageContext> OnMessageReceived;
+        /// <summary>
+        /// 
+        /// </summary>
+        event EventHandler<OpenTracingMessage> OnPublish;
         /// <summary>
         /// 订阅消息
         /// </summary>

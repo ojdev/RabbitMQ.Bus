@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using AspectCore.Extensions.Autofac;
+using AspectCore.Extensions.DependencyInjection;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
@@ -30,7 +32,11 @@ namespace SendMessageWebAPI
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options =>
             {
-                options.AddAutofac(services);
+                options.AddAutofac(services, butterflySetup: butterfly =>
+                {
+                    butterfly.CollectorUrl = "http://192.168.0.252:9618";
+                    butterfly.Service = "RabbitMQ Test";
+                });
                 options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
                 options.Persistence = true;
                 options.NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(3);
@@ -38,6 +44,7 @@ namespace SendMessageWebAPI
             services.AddScoped<SendMessageManager>();
             var container = new ContainerBuilder();
             container.Populate(services);
+            container.RegisterDynamicProxy();
             return new AutofacServiceProvider(container.Build());
         }
 
@@ -48,12 +55,13 @@ namespace SendMessageWebAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-            Task.Factory.StartNew(async () =>
-            {
-                //为了验证先启动生产者发送消息，后启动消费者消费的情况
-                await Task.Delay(20000);
-                app.UseRabbitMQBus(true);
-            });
+            app.UseRabbitMQBus(true);
+            //Task.Factory.StartNew(async () =>
+            //{
+            //    //为了验证先启动生产者发送消息，后启动消费者消费的情况
+            //    await Task.Delay(20000);
+            //    app.UseRabbitMQBus(true);
+            //});
             app.UseMvc();
         }
     }
