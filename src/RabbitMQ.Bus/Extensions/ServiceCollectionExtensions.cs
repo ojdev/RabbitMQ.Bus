@@ -27,10 +27,8 @@ namespace Microsoft.Extensions.DependencyInjection
             foreach (var messageType in messageTypes)
             {
                 var handlers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToList();
-
                 foreach (var handleType in handlers)
                 {
-                    Console.WriteLine(handleType);
                     services.AddScoped(handleType);
                 }
             }

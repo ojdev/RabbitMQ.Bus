@@ -17,14 +17,23 @@ namespace RabbitMQ.Bus
     public class RabbitMQBusService : IRabbitMQBus
     {
         private readonly RabbitMQBusFactory _factory;
-        private readonly RabbitMQConfig _config;
+        /// <summary>
+        /// 
+        /// </summary>
+        public RabbitMQConfig Config { get; }
+
         /// <summary>
         /// 
         /// </summary>
         public event EventHandler<MessageContext> OnMessageReceived;
+        /// <summary>
+        /// 发送消息
+        /// </summary>
+        public event EventHandler<OpenTracingMessage> OnPublish;
         #region Handlers and Queues
         private readonly Func<Type, Type[]> GetHandlers = new Func<Type, Type[]>((messageType) => AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IRabbitMQBusHandler<>).MakeGenericType(messageType)))).ToArray());
         private readonly Func<Type[]> GetQueues = new Func<Type[]>(() => AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttributes(typeof(QueueAttribute), true).Any())).ToArray());
+
         #endregion
         /// <summary>
         /// 
@@ -32,7 +41,7 @@ namespace RabbitMQ.Bus
         /// <param name="config"></param>
         public RabbitMQBusService(RabbitMQConfig config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             _factory = new RabbitMQBusFactory
             {
                 ConnectionFactory = new ConnectionFactory
@@ -42,7 +51,7 @@ namespace RabbitMQ.Bus
                     Uri = new Uri(config.ConnectionString)
                 }
             };
-            _factory.GetConnection = _factory.ConnectionFactory.CreateConnection(clientProvidedName: _config.ClientProvidedName);
+            _factory.GetConnection = _factory.ConnectionFactory.CreateConnection(clientProvidedName: Config.ClientProvidedName);
         }
 
         /// <summary>
@@ -127,22 +136,23 @@ namespace RabbitMQ.Bus
         /// <param name="exchangeName"></param>
         public Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "")
         {
-            using (IModel channel = BindExchange(exchangeName ?? _config.ExchangeName))
+            using (IModel channel = BindExchange(exchangeName ?? Config.ExchangeName))
             {
                 IBasicProperties properties = null;
-                if (_config.Persistence)
+                if (Config.Persistence)
                 {
                     properties = channel.CreateBasicProperties();
                     properties.DeliveryMode = 2;
                 }
-                channel.BasicReturn += async (se, ex) => await Task.Delay(_config.NoConsumerMessageRetryInterval).ContinueWith((t) => Publish(ex.Body, ex.RoutingKey, ex.Exchange));
+                channel.BasicReturn += async (se, ex) => await Task.Delay(Config.NoConsumerMessageRetryInterval).ContinueWith((t) => Publish(ex.Body, ex.RoutingKey, ex.Exchange));
                 channel.BasicPublish(
-                    exchange: exchangeName ?? _config.ExchangeName,
+                    exchange: exchangeName ?? Config.ExchangeName,
                     routingKey: routingKey,
                     mandatory: true,
                     basicProperties: properties,
                     body: sendBytes);
             }
+            OnPublish?.Invoke(this, new OpenTracingMessage());
             return Task.CompletedTask;
         }
 
@@ -160,7 +170,7 @@ namespace RabbitMQ.Bus
         private (string QueueName, string RoutingKey, string ExchangeName) GetQueue(Type messageType)
         {
             var queue = messageType.GetQueue();
-            var exchangeName = queue.ExchangeName ?? _config.ExchangeName;
+            var exchangeName = queue.ExchangeName ?? Config.ExchangeName;
             var queueName = queue.QueueName ?? $"{exchangeName}.{messageType.Name}";
             return (queueName, queue.RoutingKey ?? "", exchangeName);
         }
@@ -173,12 +183,12 @@ namespace RabbitMQ.Bus
             IModel channel = _factory.GetConnection.CreateModel();
             try
             {
-                channel.ExchangeDeclarePassive(exchangeName ?? _config.ExchangeName);
+                channel.ExchangeDeclarePassive(exchangeName ?? Config.ExchangeName);
             }
             catch
             {
                 channel = _factory.GetConnection.CreateModel();
-                channel.ExchangeDeclare(exchangeName ?? _config.ExchangeName, _config.ExchangeType, durable: _config.Persistence, autoDelete: false);
+                channel.ExchangeDeclare(exchangeName ?? Config.ExchangeName, Config.ExchangeType, durable: Config.Persistence, autoDelete: false);
             }
             return channel;
         }
@@ -193,7 +203,7 @@ namespace RabbitMQ.Bus
         {
 
             IModel channel = BindExchange(exchangeName);
-            channel.QueueUnbind(queueName, exchangeName ?? _config.ExchangeName, routingKey);
+            channel.QueueUnbind(queueName, exchangeName ?? Config.ExchangeName, routingKey);
             try
             {
                 channel.QueueDeclarePassive(queueName);
@@ -201,9 +211,9 @@ namespace RabbitMQ.Bus
             catch
             {
                 channel = BindExchange(exchangeName);
-                channel.QueueDeclare(queueName, _config.Persistence, false, false, null);
+                channel.QueueDeclare(queueName, Config.Persistence, false, false, null);
             }
-            channel.QueueBind(queueName, exchangeName ?? _config.ExchangeName, routingKey, null);
+            channel.QueueBind(queueName, exchangeName ?? Config.ExchangeName, routingKey, null);
             channel.BasicQos(0, 1, false);
             return channel;
         }
