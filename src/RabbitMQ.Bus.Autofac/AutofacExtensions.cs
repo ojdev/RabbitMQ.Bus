@@ -23,7 +23,14 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (butterflySetup != null)
             {
-                services.AddButterfly(butterflySetup);
+                try
+                {
+                    services.AddButterfly(butterflySetup);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
             services.AddSingleton(options =>
             {
@@ -31,7 +38,16 @@ namespace Microsoft.Extensions.DependencyInjection
                 var bus = options.GetRequiredService<IRabbitMQBus>();
                 IServiceTracer tracer = null;
                 if (butterflySetup != null)
-                    tracer = options.GetRequiredService<IServiceTracer>();
+                {
+                    try
+                    {
+                        tracer = options.GetRequiredService<IServiceTracer>();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                }
                 return new AutofacMessageReceive(lifetime, bus, tracer);
             });
         }

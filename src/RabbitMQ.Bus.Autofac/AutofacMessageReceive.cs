@@ -34,13 +34,20 @@ namespace RabbitMQ.Bus.Autofac
         {
             if (_tracer != null)
             {
-                _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.UtcNow, span =>
+                try
                 {
-                    span.Tags.Client().Component("RabbitMQ_Publish")
-                    .Set("ExchangeType", _service.Config.ExchangeType)
-                    .Set("ClientProvidedName", _service.Config.ClientProvidedName)
-                    .PeerAddress(_service.Config.ConnectionString);
-                });
+                    _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.Now, span =>
+                    {
+                        span.Tags.Client().Component("RabbitMQ_Publish")
+                        .Set("ExchangeType", _service.Config.ExchangeType)
+                        .Set("ClientProvidedName", _service.Config.ClientProvidedName)
+                        .PeerAddress(_service.Config.ConnectionString);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 
