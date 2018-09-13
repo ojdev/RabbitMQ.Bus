@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.0.9</Version>
+    <Version>0.0.10</Version>
     <Description>用于在asp.net core mvc中使用aotufac进行RabbitMQ.Bus的注册。</Description>
     <Authors>欧俊</Authors>
     <Company>欧俊</Company>
@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.8.1" />
-    <PackageReference Include="Butterfly.Client.AspNetCore" Version="0.0.7" />
+    <PackageReference Include="Housecool.Butterfly.Client.AspNetCore" Version="0.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.1.1" />
   </ItemGroup>
 

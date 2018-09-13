@@ -1,9 +1,7 @@
 ﻿using Autofac;
-using Butterfly.Client.Tracing;
-using Butterfly.OpenTracing;
-using RabbitMQ.Client.Events;
+using Housecool.Butterfly.Client.Tracing;
+using Housecool.Butterfly.OpenTracing;
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 namespace RabbitMQ.Bus.Autofac
 {
