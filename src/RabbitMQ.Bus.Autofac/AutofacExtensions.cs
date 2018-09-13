@@ -1,6 +1,6 @@
 ﻿using Autofac;
-using Butterfly.Client.AspNetCore;
-using Butterfly.Client.Tracing;
+using Housecool.Butterfly.Client.AspNetCore;
+using Housecool.Butterfly.Client.Tracing;
 using Microsoft.AspNetCore.Builder;
 using RabbitMQ.Bus;
 using RabbitMQ.Bus.Autofac;
