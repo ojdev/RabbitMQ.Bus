@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using AspectCore.Extensions.Autofac;
-using AspectCore.Extensions.DependencyInjection;
+﻿using AspectCore.Extensions.Autofac;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
@@ -12,8 +6,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Polly;
+using System;
+using System.Reflection;
 
 namespace SendMessageWebAPI
 {
@@ -32,17 +27,13 @@ namespace SendMessageWebAPI
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options =>
             {
-                options.AddAutofac(services, butterflySetup: butterfly =>
-                {
-                    butterfly.CollectorUrl = "http://192.168.0.252:9618";
-                    butterfly.Service = "RabbitMQ Test";
-                });
+                options.AddAutofac(services);
                 options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
                 options.Persistence = true;
                 options.NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(3);
             });
             services.AddScoped<SendMessageManager>();
-            var container = new ContainerBuilder();
+            ContainerBuilder container = new ContainerBuilder();
             container.Populate(services);
             container.RegisterDynamicProxy();
             return new AutofacServiceProvider(container.Build());

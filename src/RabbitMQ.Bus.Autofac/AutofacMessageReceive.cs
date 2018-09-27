@@ -8,7 +8,7 @@ namespace RabbitMQ.Bus.Autofac
     /// <summary>
     /// 
     /// </summary>
-    class AutofacMessageReceive
+    internal class AutofacMessageReceive
     {
         private readonly ILifetimeScope _lifetime;
         private readonly IRabbitMQBus _service;
@@ -34,13 +34,16 @@ namespace RabbitMQ.Bus.Autofac
             {
                 try
                 {
-                    _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.Now, span =>
+                    if (_service.Config != null)
                     {
-                        span.Tags.Client().Component("RabbitMQ_Publish")
-                        .Set("ExchangeType", _service.Config.ExchangeType)
-                        .Set("ClientProvidedName", _service.Config.ClientProvidedName)
-                        .PeerAddress(_service.Config.ConnectionString);
-                    });
+                        _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.Now, span =>
+                        {
+                            span.Tags.Client().Component("RabbitMQ_Publish")
+                            .Set("ExchangeType", _service.Config.ExchangeType)
+                            .Set("ClientProvidedName", _service.Config.ClientProvidedName)
+                            .PeerAddress(_service.Config.ConnectionString);
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -63,7 +66,7 @@ namespace RabbitMQ.Bus.Autofac
         /// <param name="e"></param>
         private async void RabbitMQ_OnMessageReceived(object sender, MessageContext e)
         {
-            using (var scope = _lifetime.BeginLifetimeScope())
+            using (ILifetimeScope scope = _lifetime.BeginLifetimeScope())
             {
                 //if ((sender is BasicDeliverEventArgs basicDeliver))
                 //{
@@ -71,9 +74,9 @@ namespace RabbitMQ.Bus.Autofac
                 //}
                 try
                 {
-                    var handle = scope.ResolveOptional(e.HandleType);
-                    var method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
-                    var task = (Task)method.Invoke(handle, new[] { e.Message });
+                    object handle = scope.ResolveOptional(e.HandleType);
+                    System.Reflection.MethodInfo method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
+                    Task task = (Task)method.Invoke(handle, new[] { e.Message });
                     await task.ConfigureAwait(false);
                 }
                 catch (Exception ex)
