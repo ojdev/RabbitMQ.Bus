@@ -9,6 +9,10 @@ namespace RabbitMQ.Bus
     {
         private const string DEFAULT_EXCHANGE_NAME = "Default.RabbitMQBus.Exchange";
         /// <summary>
+        /// 连接出现错误后重试连接的指数次数(默认：50)
+        /// </summary>
+        public int FailConnectRetryCount { set; get; } = 50;
+        /// <summary>
         /// 
         /// </summary>
         public string ClientProvidedName { set; get; }
