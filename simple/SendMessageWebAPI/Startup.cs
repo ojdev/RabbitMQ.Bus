@@ -3,11 +3,13 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Polly;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 
 namespace SendMessageWebAPI
@@ -29,6 +31,7 @@ namespace SendMessageWebAPI
             {
                 options.AddAutofac(services);
                 options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+                options.FailConnectRetryCount = 1000;
                 options.Persistence = true;
                 options.NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(3);
             });
