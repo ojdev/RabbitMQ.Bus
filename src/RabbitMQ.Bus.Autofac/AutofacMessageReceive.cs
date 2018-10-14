@@ -85,7 +85,7 @@ namespace RabbitMQ.Bus.Autofac
                 }
                 finally
                 {
-                    Console.WriteLine(e.OriginalData);
+                    //Console.WriteLine(e.OriginalData);
                 }
             }
         }
