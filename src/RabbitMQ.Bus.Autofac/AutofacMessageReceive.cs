@@ -41,6 +41,9 @@ namespace RabbitMQ.Bus.Autofac
                             span.Tags.Client().Component("RabbitMQ_Publish")
                             .Set("ExchangeType", _service.Config.ExchangeType)
                             .Set("ClientProvidedName", _service.Config.ClientProvidedName)
+                            .Set(nameof(OpenTracingMessage.ExchangeName), e.ExchangeName)
+                            .Set(nameof(OpenTracingMessage.RoutingKey), e.RoutingKey)
+                            .Set(nameof(OpenTracingMessage.Information), e.Information)
                             .PeerAddress(_service.Config.ConnectionString);
                         });
                     }

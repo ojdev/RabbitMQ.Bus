@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>用于在asp.net core mvc中使用aotufac进行RabbitMQ.Bus的注册。</Description>
     <Authors>欧俊</Authors>
     <Company>欧俊</Company>

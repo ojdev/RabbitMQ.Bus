@@ -139,7 +139,8 @@ namespace RabbitMQ.Bus
         /// <param name="sendBytes"></param>
         /// <param name="routingKey"></param>
         /// <param name="exchangeName"></param>
-        public Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "")
+        /// <param name="isNoConsumerException"></param>
+        public Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "", bool isNoConsumerException = false)
         {
             using (IModel channel = BindExchange(exchangeName ?? _factory.Config.ExchangeName))
             {
@@ -157,7 +158,7 @@ namespace RabbitMQ.Bus
                     basicProperties: properties,
                     body: sendBytes);
             }
-            OnPublish?.Invoke(this, new OpenTracingMessage());
+            OnPublish?.Invoke(this, new OpenTracingMessage(exchangeName, routingKey, isNoConsumerException ? "无消费者" : ""));
             return Task.CompletedTask;
         }
 
