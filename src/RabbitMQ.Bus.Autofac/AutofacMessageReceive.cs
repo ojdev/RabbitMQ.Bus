@@ -1,7 +1,10 @@
 ﻿using Autofac;
 using Housecool.Butterfly.Client.Tracing;
 using Housecool.Butterfly.OpenTracing;
+using Microsoft.Extensions.Logging;
+using RabbitMQ.Client.Events;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 namespace RabbitMQ.Bus.Autofac
 {
@@ -13,17 +16,20 @@ namespace RabbitMQ.Bus.Autofac
         private readonly ILifetimeScope _lifetime;
         private readonly IRabbitMQBus _service;
         private readonly IServiceTracer _tracer;
+        private readonly ILogger<AutofacMessageReceive> _logger;
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="lifetime">Autofac的Lefttime</param>
-        /// <param name="service">RabbitMQBus的服务</param>
-        /// <param name="tracer">OpenTracer</param>
-        public AutofacMessageReceive(ILifetimeScope lifetime, IRabbitMQBus service, IServiceTracer tracer)
+        /// <param name="lifetime"></param>
+        /// <param name="service"></param>
+        /// <param name="tracer"></param>
+        /// <param name="logger"></param>
+        public AutofacMessageReceive(ILifetimeScope lifetime, IRabbitMQBus service, IServiceTracer tracer, ILogger<AutofacMessageReceive> logger)
         {
             _lifetime = lifetime;
             _service = service;
             _tracer = tracer;
+            _logger = logger;
             _service.OnMessageReceived += RabbitMQ_OnMessageReceived;
             _service.OnPublish += RabbitMQ_OnPublish;
         }
@@ -36,7 +42,7 @@ namespace RabbitMQ.Bus.Autofac
                 {
                     if (_service.Config != null)
                     {
-                        _tracer.ChildTrace("rabbitMQ_publish", DateTimeOffset.Now, span =>
+                        _tracer.ChildTrace("RabbitMQ_publish", DateTimeOffset.Now, span =>
                         {
                             span.Tags.Client().Component("RabbitMQ_Publish")
                             .Set("ExchangeType", _service.Config.ExchangeType)
@@ -44,6 +50,7 @@ namespace RabbitMQ.Bus.Autofac
                             .Set(nameof(OpenTracingMessage.ExchangeName), e.ExchangeName)
                             .Set(nameof(OpenTracingMessage.RoutingKey), e.RoutingKey)
                             .Set(nameof(OpenTracingMessage.Information), e.Information)
+                            .Set(nameof(OpenTracingMessage.NoConsumer), e.NoConsumer)
                             .PeerAddress(_service.Config.ConnectionString);
                         });
                     }
@@ -69,26 +76,51 @@ namespace RabbitMQ.Bus.Autofac
         /// <param name="e"></param>
         private async void RabbitMQ_OnMessageReceived(object sender, MessageContext e)
         {
-            using (ILifetimeScope scope = _lifetime.BeginLifetimeScope())
+            if ((sender is BasicDeliverEventArgs basicDeliver))
             {
-                //if ((sender is BasicDeliverEventArgs basicDeliver))
-                //{
-                //    // TODO 暂留位置
-                //}
-                try
+                if (_tracer != null)
                 {
-                    object handle = scope.ResolveOptional(e.HandleType);
-                    System.Reflection.MethodInfo method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
-                    Task task = (Task)method.Invoke(handle, new[] { e.Message });
-                    await task.ConfigureAwait(false);
+                    try
+                    {
+                        if (_service.Config != null)
+                        {
+                            _tracer.ChildTrace("RabbitMQ_Received", DateTimeOffset.Now, span =>
+                            {
+                                span.Tags.Client().Component("RabbitMQ_Received")
+                                .Set("ExchangeType", _service.Config.ExchangeType)
+                                .Set("ClientProvidedName", _service.Config.ClientProvidedName)
+                                .Set(nameof(OpenTracingMessage.ExchangeName), basicDeliver.Exchange)
+                                .Set(nameof(OpenTracingMessage.RoutingKey), basicDeliver.RoutingKey)
+                                .Set(nameof(OpenTracingMessage.Information), e.OriginalData)
+                                .PeerAddress(_service.Config.ConnectionString);
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
+                    }
                 }
-                catch (Exception ex)
+                using (ILifetimeScope scope = _lifetime.BeginLifetimeScope())
                 {
-                    System.Diagnostics.Debug.WriteLine(ex.Message);
-                }
-                finally
-                {
-                    //Console.WriteLine(e.OriginalData);
+                    bool isAck = false;
+                    try
+                    {
+                        Guid eventId = Guid.NewGuid();
+                        object handle = scope.ResolveOptional(e.HandleType);
+                        MethodInfo method = e.HandleType.GetMethod(nameof(IRabbitMQBusHandler.Handle));
+                        Task task = (Task)method.Invoke(handle, new[] { e.Message });
+                        await task.ConfigureAwait(false);
+                        isAck = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
+                    }
+                    finally
+                    {
+                        _logger.LogInformation($"{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")}\tReceived\t{isAck}\t{basicDeliver.Exchange}\t{basicDeliver.RoutingKey}\t{e.OriginalData}");
+                    }
                 }
             }
         }

@@ -19,8 +19,20 @@ namespace SendMessageWebAPI.Controllers
         public ActionResult<IEnumerable<string>> Get()
         {
             //_rabbit.Publish(new { Message="发送了一条消息",routingkey);
-            _rabbit.Publish(new { message = "topic send message." }, routingKey: "send.message", exchangeName: "dev.ex.temp.topic");
-            //_rabbit.Publish(new { message = "topic send message1." }, routingKey: "send.message", exchangeName: "dev.ex.temp.topic");
+            /*_rabbit.Publish(new
+            {
+                Scope = Guid.NewGuid(),
+                Type = "ListingDealSendMessageCreatorAction",
+                Destination = Guid.NewGuid(),
+                Parameters = new
+                {
+                    Code="000",
+                    Community = "aaa"
+                },
+                Extra = new { },
+                Source = "Core.Listing"
+            }, routingKey: "send.message", exchangeName: "dev.ex.temp.topic");*/
+            _rabbit.Publish(new { message = "topic send message1." }, routingKey: "send.message", exchangeName: "dev.ex.temp.topic");
             return new string[] { "value1", "value2", DateTime.Now.ToString(), DateTime.UtcNow.ToString() };
         }
 
