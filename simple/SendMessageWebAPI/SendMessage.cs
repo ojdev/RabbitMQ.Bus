@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using RabbitMQ.Bus;
+using System;
 using System.Threading.Tasks;
-using RabbitMQ.Bus;
 namespace SendMessageWebAPI
 {
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
@@ -12,7 +10,7 @@ namespace SendMessageWebAPI
 
         public SendMessage(string message)
         {
-            Message = message ;
+            Message = message;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
@@ -22,7 +20,7 @@ namespace SendMessageWebAPI
 
         public SendMessage1(string message)
         {
-            Message = message ;
+            Message = message;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.#")]
@@ -32,7 +30,7 @@ namespace SendMessageWebAPI
 
         public SendMessage2(string message)
         {
-            Message = message ;
+            Message = message;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.get")]
@@ -42,10 +40,10 @@ namespace SendMessageWebAPI
 
         public SendMessage3(string message)
         {
-            Message = message ;
+            Message = message;
         }
     }
-    public class SendMessageHandle : IRabbitMQBusHandler<SendMessage>
+    public class SendMessageHandle : IRabbitMQBusHandler<SendMessage>, IRabbitMQBusHandler<SendMessage1>
     {
         private readonly SendMessageManager manager;
         public SendMessageHandle(SendMessageManager sendMessage)
@@ -58,6 +56,11 @@ namespace SendMessageWebAPI
             return Task.CompletedTask;
         }
 
+        public Task Handle(SendMessage1 message)
+        {
+            Console.WriteLine(message.Message);
+            return Task.CompletedTask;
+        }
     }
     /*
     public class SendMessageHandle1 : IRabbitMQBusHandler<SendMessage1>
