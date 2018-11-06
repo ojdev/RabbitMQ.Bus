@@ -28,8 +28,8 @@ namespace RabbitMQ.Bus
         public MessageContext(Type handleType, object message, string originalData)
         {
             HandleType = handleType ?? throw new ArgumentNullException(nameof(handleType));
-            Message = message ?? throw new ArgumentNullException(nameof(message));
-            OriginalData = originalData ?? throw new ArgumentNullException(nameof(originalData));
+            Message = message ;
+            OriginalData = originalData ;
         }
     }
 }

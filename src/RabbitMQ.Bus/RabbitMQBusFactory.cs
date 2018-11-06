@@ -39,33 +39,30 @@ namespace RabbitMQ.Bus
         }
         public bool TryConnect()
         {
-            lock (sync_root)
+           // RetryPolicy policy = Policy.Handle<SocketException>().Or<BrokerUnreachableException>()
+           // .WaitAndRetry(Config.FailConnectRetryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+           // {
+           //     Console.WriteLine(DateTimeOffset.Now.ToString("[yyyy-MM-dd HH:mm:ss]"));
+           //     Console.WriteLine("--------RabbitMQ.Bus TryConnect Exception--------");
+           //     Console.WriteLine(ErrorMessage(ex));
+           //     Console.WriteLine($"{time.TotalSeconds}秒后重试。");
+           //     Console.WriteLine("--------RabbitMQ.Bus TryConnect Exception::END--------");
+           // });
+           // policy.Execute(() =>
+           //{
+           //});
+            Connect = ConnectionFactory.CreateConnection(clientProvidedName: Config.ClientProvidedName);
+            if (IsConnected)
             {
-                RetryPolicy policy = Policy.Handle<SocketException>().Or<BrokerUnreachableException>()
-                .WaitAndRetry(Config.FailConnectRetryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
-                {
-                    Console.WriteLine(DateTimeOffset.Now.ToString("[yyyy-MM-dd HH:mm:ss]"));
-                    Console.WriteLine("--------RabbitMQ.Bus TryConnect Exception--------");
-                    Console.WriteLine(ErrorMessage(ex));
-                    Console.WriteLine($"{time.TotalSeconds}秒后重试。");
-                    Console.WriteLine("--------RabbitMQ.Bus TryConnect Exception::END--------");
-                });
-                policy.Execute(() =>
-               {
-                   Connect = ConnectionFactory.CreateConnection(clientProvidedName: Config.ClientProvidedName);
-               });
-                if (IsConnected)
-                {
-                    Connect.ConnectionShutdown += (sender, ex) => TryConnect();
-                    Connect.CallbackException += (sender, ex) => TryConnect();
-                    Connect.ConnectionBlocked += (sender, ex) => TryConnect();
-                    Console.WriteLine("[RabbitMQ已连接]");
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                Connect.ConnectionShutdown += (sender, ex) => TryConnect();
+                Connect.CallbackException += (sender, ex) => TryConnect();
+                Connect.ConnectionBlocked += (sender, ex) => TryConnect();
+                Console.WriteLine("[RabbitMQ已重新连接]");
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

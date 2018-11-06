@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/ojdev/RabbitMQ.Bus</RepositoryUrl>
     <PackageTags>rqbbitmq,dnc</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Version>1.0</Version>
+    <Version>1.0.6</Version>
     <RepositoryType>github</RepositoryType>
     <PackageIconUrl>https://raw.githubusercontent.com/ojdev/RabbitMQ.Bus/master/rabbitmq.bus.png</PackageIconUrl>
   </PropertyGroup>

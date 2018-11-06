@@ -130,8 +130,9 @@ namespace RabbitMQ.Bus
         /// <param name="exchangeName">留空则使用默认的交换机</param>
         public Task Publish<TMessage>(TMessage value, string routingKey = "", string exchangeName = "")
         {
-            byte[] sendBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value));
-            return Publish(sendBytes, routingKey, exchangeName);
+            string jsonBody = JsonConvert.SerializeObject(value);
+            byte[] sendBytes = Encoding.UTF8.GetBytes(jsonBody);
+            return Publish(sendBytes, routingKey, exchangeName, false);
         }
         /// <summary>
         /// 发送消息
@@ -139,7 +140,8 @@ namespace RabbitMQ.Bus
         /// <param name="sendBytes"></param>
         /// <param name="routingKey"></param>
         /// <param name="exchangeName"></param>
-        public Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "")
+        /// <param name="isNoConsumerException"></param>
+        public Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "", bool isNoConsumerException = false)
         {
             using (IModel channel = BindExchange(exchangeName ?? _factory.Config.ExchangeName))
             {
@@ -149,7 +151,7 @@ namespace RabbitMQ.Bus
                     properties = channel.CreateBasicProperties();
                     properties.DeliveryMode = 2;
                 }
-                channel.BasicReturn += async (se, ex) => await Task.Delay(_factory.Config.NoConsumerMessageRetryInterval).ContinueWith((t) => Publish(ex.Body, ex.RoutingKey, ex.Exchange));
+                channel.BasicReturn += async (se, ex) => await Task.Delay(_factory.Config.NoConsumerMessageRetryInterval).ContinueWith((t) => Publish(ex.Body, ex.RoutingKey, ex.Exchange, true));
                 channel.BasicPublish(
                     exchange: exchangeName ?? _factory.Config.ExchangeName,
                     routingKey: routingKey,
@@ -157,7 +159,7 @@ namespace RabbitMQ.Bus
                     basicProperties: properties,
                     body: sendBytes);
             }
-            OnPublish?.Invoke(this, new OpenTracingMessage());
+            OnPublish?.Invoke(this, new OpenTracingMessage(exchangeName, routingKey, Encoding.UTF8.GetString(sendBytes), isNoConsumerException));
             return Task.CompletedTask;
         }
 

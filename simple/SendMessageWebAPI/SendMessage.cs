@@ -12,7 +12,7 @@ namespace SendMessageWebAPI
 
         public SendMessage(string message)
         {
-            Message = message ?? throw new ArgumentNullException(nameof(message));
+            Message = message ;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
@@ -22,7 +22,7 @@ namespace SendMessageWebAPI
 
         public SendMessage1(string message)
         {
-            Message = message ?? throw new ArgumentNullException(nameof(message));
+            Message = message ;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.#")]
@@ -32,7 +32,7 @@ namespace SendMessageWebAPI
 
         public SendMessage2(string message)
         {
-            Message = message ?? throw new ArgumentNullException(nameof(message));
+            Message = message ;
         }
     }
     [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.get")]
@@ -42,7 +42,7 @@ namespace SendMessageWebAPI
 
         public SendMessage3(string message)
         {
-            Message = message ?? throw new ArgumentNullException(nameof(message));
+            Message = message ;
         }
     }
     public class SendMessageHandle : IRabbitMQBusHandler<SendMessage>
@@ -57,7 +57,9 @@ namespace SendMessageWebAPI
             manager.Write(message);
             return Task.CompletedTask;
         }
+
     }
+    /*
     public class SendMessageHandle1 : IRabbitMQBusHandler<SendMessage1>
     {
         public Task Handle(SendMessage1 message)
@@ -81,7 +83,7 @@ namespace SendMessageWebAPI
             Console.WriteLine(message.Message);
             return Task.CompletedTask;
         }
-    }
+    }*/
     public class SendMessageManager
     {
         public void Write(SendMessage message)

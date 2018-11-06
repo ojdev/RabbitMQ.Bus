@@ -49,7 +49,8 @@ namespace RabbitMQ.Bus
         /// <param name="sendBytes"></param>
         /// <param name="routingKey"></param>
         /// <param name="exchangeName"></param>
+        /// <param name="isNoConsumerException"></param>
         /// <returns></returns>
-        Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "");
+        Task Publish(byte[] sendBytes, string routingKey = "", string exchangeName = "", bool isNoConsumerException = false);
     }
 }

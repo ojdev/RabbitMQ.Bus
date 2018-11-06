@@ -2,6 +2,7 @@
 using Housecool.Butterfly.Client.AspNetCore;
 using Housecool.Butterfly.Client.Tracing;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Bus;
 using RabbitMQ.Bus.Autofac;
 using System;
@@ -34,8 +35,9 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             services.AddSingleton(options =>
             {
-                var lifetime = options.GetRequiredService<ILifetimeScope>();
-                var bus = options.GetRequiredService<IRabbitMQBus>();
+                ILifetimeScope lifetime = options.GetRequiredService<ILifetimeScope>();
+                IRabbitMQBus bus = options.GetRequiredService<IRabbitMQBus>();
+                ILogger<AutofacMessageReceive> logger = options.GetService<ILogger<AutofacMessageReceive>>();
                 IServiceTracer tracer = null;
                 if (butterflySetup != null)
                 {
@@ -48,7 +50,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Console.WriteLine(ex.Message);
                     }
                 }
-                return new AutofacMessageReceive(lifetime, bus, tracer);
+                return new AutofacMessageReceive(lifetime, bus, tracer, logger);
             });
         }
         /// <summary>
@@ -60,10 +62,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (autoSubscribe)
             {
-                var bus = app.ApplicationServices.GetRequiredService<IRabbitMQBus>();
+                IRabbitMQBus bus = app.ApplicationServices.GetRequiredService<IRabbitMQBus>();
                 bus.AutoSubscribe();
             }
-            var service = app.ApplicationServices.GetRequiredService<AutofacMessageReceive>();
+            AutofacMessageReceive service = app.ApplicationServices.GetRequiredService<AutofacMessageReceive>();
             service.Active();
         }
     }
