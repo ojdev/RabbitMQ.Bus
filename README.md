@@ -4,5 +4,6 @@
 
 |Package|Status|
 |:------|:-----:|
+|RabbitMQ.EventBus.AspNetCore|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.svg)](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore)|
 |RabbitMQ.Bus|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.Bus.svg)](https://badge.fury.io/nu/RabbitMQ.Bus)|
 |RabbitMQ.Bus.Autofac|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.Bus.Autofac.svg)](https://badge.fury.io/nu/RabbitMQ.Bus.Autofac)|
