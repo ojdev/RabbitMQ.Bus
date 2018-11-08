@@ -3,14 +3,12 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RabbitMQ.EventBus.AspNetCore;
+using SendMessageWebAPI.Controllers;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Reflection;
 
 namespace SendMessageWebAPI
 {
@@ -27,14 +25,11 @@ namespace SendMessageWebAPI
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.AddRabbitMQBus("amqp://guest:guest@192.168.0.252:5672/", options =>
-            {
-                options.AddAutofac(services);
-                options.ClientProvidedName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-                options.FailConnectRetryCount = 1000;
-                options.Persistence = true;
-                options.NoConsumerMessageRetryInterval = TimeSpan.FromSeconds(3);
-            });
+            services.AddRabbitMQEventBus("amqp://guest:guest@192.168.0.252:5672/", eventBusOptionAction: eventBusOption =>
+              {
+                  eventBusOption.ClientProvidedAssembly("RabbitMQEventBusTest");
+                  eventBusOption.EnableRetryOnFailure(true, 5000, TimeSpan.FromSeconds(30));
+              }); 
             services.AddScoped<SendMessageManager>();
             ContainerBuilder container = new ContainerBuilder();
             container.Populate(services);
@@ -49,7 +44,7 @@ namespace SendMessageWebAPI
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.UseRabbitMQBus(true);
+            app.RabbitMQEventBusAutoSubscribe();
             //Task.Factory.StartNew(async () =>
             //{
             //    //为了验证先启动生产者发送消息，后启动消费者消费的情况

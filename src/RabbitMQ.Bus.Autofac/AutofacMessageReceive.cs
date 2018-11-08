@@ -57,7 +57,7 @@ namespace RabbitMQ.Bus.Autofac
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
                 }
             }
         }
@@ -67,7 +67,7 @@ namespace RabbitMQ.Bus.Autofac
         /// </summary>
         public void Active()
         {
-            Console.WriteLine("RabbitMQ Bus for Autofac active.");
+            _logger.LogInformation("RabbitMQ Bus for Autofac active.");
         }
         /// <summary>
         /// 消息的处理
