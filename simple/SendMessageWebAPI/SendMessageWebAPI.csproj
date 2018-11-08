@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\RabbitMQ.Bus.AspNetCore\RabbitMQ.EventBus.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\RabbitMQ.EventBus.AspNetCore\RabbitMQ.EventBus.AspNetCore.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,17 +2,19 @@
 
 namespace RabbitMQ.EventBus.AspNetCore.Configurations
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class RabbitMQEventBusConnectionConfigurationBuild
     {
         private RabbitMQEventBusConnectionConfiguration Configuration { get; }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionConfiguration"></param>
         public RabbitMQEventBusConnectionConfigurationBuild(RabbitMQEventBusConnectionConfiguration connectionConfiguration)
         {
             Configuration = connectionConfiguration;
-        }
-        public void AddLogging()
-        {
-            Configuration.Logging = true;
         }
         /// <summary>
         /// 

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Client
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class IModelExtensions
     {
         /// <summary>
@@ -11,7 +14,7 @@ namespace RabbitMQ.Client
         /// (Spec method) Declare an exchange.
         ///  This method performs a "passive declare" on an exchange, which verifies whether. It will do nothing if the exchange already exists and result in a channel-levelprotocol exception (channel closure) if not.
         /// </summary>
-        /// <param name="model"></param>
+        /// <param name="persistentConnection"></param>
         /// <param name="exchange"></param>
         /// <param name="type"></param>
         /// <param name="durable"></param>

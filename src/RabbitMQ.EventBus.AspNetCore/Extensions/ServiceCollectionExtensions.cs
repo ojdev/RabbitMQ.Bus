@@ -12,8 +12,18 @@ using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class ServiceCollectionExtensions
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="connectionString"></param>
+        /// <param name="eventBusOptionAction"></param>
+        /// <returns></returns>
         public static IServiceCollection AddRabbitMQEventBus(this IServiceCollection services, string connectionString, Action<RabbitMQEventBusConnectionConfigurationBuild> eventBusOptionAction)
         {
             RabbitMQEventBusConnectionConfiguration configuration = new RabbitMQEventBusConnectionConfiguration();
@@ -43,6 +53,10 @@ namespace Microsoft.Extensions.DependencyInjection
             }
             return services;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="app"></param>
         public static void RabbitMQEventBusAutoSubscribe(this IApplicationBuilder app)
         {
             IRabbitMQEventBus eventBus = app.ApplicationServices.GetRequiredService<IRabbitMQEventBus>();
