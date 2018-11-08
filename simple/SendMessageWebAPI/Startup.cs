@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQ.EventBus.AspNetCore;
-using SendMessageWebAPI.Controllers;
 using System;
 
 namespace SendMessageWebAPI
@@ -26,14 +24,15 @@ namespace SendMessageWebAPI
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddRabbitMQEventBus("amqp://guest:guest@192.168.0.252:5672/", eventBusOptionAction: eventBusOption =>
-              {
-                  eventBusOption.ClientProvidedAssembly("RabbitMQEventBusTest");
-                  eventBusOption.EnableRetryOnFailure(true, 5000, TimeSpan.FromSeconds(30));
-              }); 
+            {
+                eventBusOption.ClientProvidedAssembly("RabbitMQEventBusTest");
+                eventBusOption.EnableRetryOnFailure(true, 5000, TimeSpan.FromSeconds(30));
+            });
             services.AddScoped<SendMessageManager>();
             ContainerBuilder container = new ContainerBuilder();
             container.Populate(services);
             container.RegisterDynamicProxy();
+
             return new AutofacServiceProvider(container.Build());
         }
 

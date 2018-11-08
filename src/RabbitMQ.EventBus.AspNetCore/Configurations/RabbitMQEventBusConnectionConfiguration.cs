@@ -2,12 +2,11 @@
 
 namespace RabbitMQ.EventBus.AspNetCore.Configurations
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public sealed class RabbitMQEventBusConnectionConfiguration
     {
-        /// <summary>
-        /// 是否显示日志
-        /// </summary>
-        public bool Logging { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -24,10 +23,11 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// 网络自动恢复时间间隔（默认5秒）
         /// </summary>
         public TimeSpan NetworkRecoveryInterval { get; set; }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public RabbitMQEventBusConnectionConfiguration()
         {
-            Logging = false;
             FailReConnectRetryCount = 50;
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5);
             AutomaticRecoveryEnabled = true;

@@ -21,7 +21,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
         private bool _disposed;
         private readonly object sync_root = new object();
 
-        public DefaultRabbitMQPersistentConnection(string clientProvidedName, IConnectionFactory connectionFactory, ILogger<DefaultRabbitMQPersistentConnection> logger, int retryCount = 10)
+        public DefaultRabbitMQPersistentConnection(string clientProvidedName, IConnectionFactory connectionFactory, ILogger<DefaultRabbitMQPersistentConnection> logger, int retryCount)
         {
             _clientProvidedName = clientProvidedName ?? throw new ArgumentNullException(nameof(clientProvidedName));
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));

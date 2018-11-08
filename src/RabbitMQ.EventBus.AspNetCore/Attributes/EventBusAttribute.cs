@@ -20,7 +20,9 @@ namespace RabbitMQ.EventBus.AspNetCore.Attributes
         /// 路由Key
         /// </summary>
         public string RoutingKey { get; set; }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public EventBusAttribute()
         {
             RoutingKey = "";

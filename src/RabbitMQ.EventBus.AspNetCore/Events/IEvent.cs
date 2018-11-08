@@ -4,6 +4,9 @@ using System.Text;
 
 namespace RabbitMQ.EventBus.AspNetCore.Events
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public interface IEvent
     {
 
