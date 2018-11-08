@@ -1,10 +1,11 @@
-﻿using RabbitMQ.Bus;
+﻿using RabbitMQ.EventBus.AspNetCore.Attributes;
+using RabbitMQ.EventBus.AspNetCore.Events;
 using System;
 using System.Threading.Tasks;
 namespace SendMessageWebAPI
 {
-    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
-    public class SendMessage
+    [EventBus(Exchange = "dev.ex.temp.topic", RoutingKey = "send.message")]
+    public class SendMessage : IEvent
     {
         public string Message { set; get; }
 
@@ -13,8 +14,8 @@ namespace SendMessageWebAPI
             Message = message;
         }
     }
-    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.message")]
-    public class SendMessage1
+    [EventBus(Exchange = "dev.ex.temp.topic", RoutingKey = "send.message")]
+    public class SendMessage1 : IEvent
     {
         public string Message { set; get; }
 
@@ -23,8 +24,8 @@ namespace SendMessageWebAPI
             Message = message;
         }
     }
-    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.#")]
-    public class SendMessage2
+    [EventBus(Exchange = "dev.ex.temp.topic", RoutingKey = "send.#")]
+    public class SendMessage2 : IEvent
     {
         public string Message { set; get; }
 
@@ -33,8 +34,8 @@ namespace SendMessageWebAPI
             Message = message;
         }
     }
-    [Queue(ExchangeName = "dev.ex.temp.topic", RoutingKey = "send.get")]
-    public class SendMessage3
+    [EventBus(Exchange = "dev.ex.temp.topic", RoutingKey = "send.get")]
+    public class SendMessage3 : IEvent
     {
         public string Message { set; get; }
 
@@ -43,7 +44,7 @@ namespace SendMessageWebAPI
             Message = message;
         }
     }
-    public class SendMessageHandle : IRabbitMQBusHandler<SendMessage>, IRabbitMQBusHandler<SendMessage1>
+    public class SendMessageHandle : IEventHandler<SendMessage>
     {
         private readonly SendMessageManager manager;
         public SendMessageHandle(SendMessageManager sendMessage)
@@ -55,43 +56,37 @@ namespace SendMessageWebAPI
             manager.Write(message);
             return Task.CompletedTask;
         }
-
-        public Task Handle(SendMessage1 message)
-        {
-            Console.WriteLine(message.Message);
-            return Task.CompletedTask;
-        }
     }
-    /*
-    public class SendMessageHandle1 : IRabbitMQBusHandler<SendMessage1>
+
+    public class SendMessageHandle1 : IEventHandler<SendMessage1>
     {
         public Task Handle(SendMessage1 message)
         {
-            Console.WriteLine(message.Message);
+            Console.WriteLine($"收到消息1{message.Message}");
             return Task.CompletedTask;
         }
     }
-    public class SendMessageHandle2 : IRabbitMQBusHandler<SendMessage2>
+    public class SendMessageHandle2 : IEventHandler<SendMessage2>
     {
         public Task Handle(SendMessage2 message)
         {
-            Console.WriteLine(message.Message);
+            Console.WriteLine($"收到消息2{message.Message}");
             return Task.CompletedTask;
         }
     }
-    public class SendMessageHandle3 : IRabbitMQBusHandler<SendMessage3>
+    public class SendMessageHandle3 : IEventHandler<SendMessage3>
     {
         public Task Handle(SendMessage3 message)
         {
-            Console.WriteLine(message.Message);
+            Console.WriteLine($"收到消息3{message.Message}");
             return Task.CompletedTask;
         }
-    }*/
+    }
     public class SendMessageManager
     {
         public void Write(SendMessage message)
         {
-            Console.WriteLine(message.Message);
+            Console.WriteLine($"收到消息{message.Message}");
         }
     }
 }

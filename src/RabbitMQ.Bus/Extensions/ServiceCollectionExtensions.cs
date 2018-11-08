@@ -2,7 +2,6 @@
 using RabbitMQ.Bus.Extensions;
 using System;
 using System.Linq;
-
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
