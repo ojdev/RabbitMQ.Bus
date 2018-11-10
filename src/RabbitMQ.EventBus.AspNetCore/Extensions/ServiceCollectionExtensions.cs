@@ -8,8 +8,6 @@ using RabbitMQ.EventBus.AspNetCore.Events;
 using RabbitMQ.EventBus.AspNetCore.Factories;
 using RabbitMQ.EventBus.AspNetCore.Modules;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// 
+        /// 添加RabbitMQEventBus
         /// </summary>
         /// <param name="services"></param>
         /// <param name="connectionString"></param>
@@ -43,12 +41,10 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             services.TryAddSingleton<IEventHandlerModuleFactory, EventHandlerModuleFactory>();
             services.TryAddSingleton<IRabbitMQEventBus, DefaultRabbitMQEventBus>();
-            IEnumerable<Type> messageTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IEvent))));
-            foreach (Type mType in messageTypes)
+            foreach (Type mType in typeof(IEvent).GetAssemblies())
             {
                 services.TryAddTransient(mType);
-                IEnumerable<Type> handllerTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IEventHandler<>).MakeGenericType(mType))));
-                foreach (Type hType in handllerTypes)
+                foreach (Type hType in typeof(IEventHandler<>).GetMakeGenericType(mType))
                 {
                     services.TryAddTransient(hType);
                 }
@@ -56,22 +52,25 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
         /// <summary>
-        /// 
+        /// 自动订阅
         /// </summary>
         /// <param name="app"></param>
         public static void RabbitMQEventBusAutoSubscribe(this IApplicationBuilder app)
         {
             IRabbitMQEventBus eventBus = app.ApplicationServices.GetRequiredService<IRabbitMQEventBus>();
-            IEnumerable<Type> messageTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IEvent))));
-            foreach (Type mType in messageTypes)
+            foreach (Type mType in typeof(IEvent).GetAssemblies())
             {
-                IEnumerable<Type> handllerTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IEventHandler<>).MakeGenericType(mType))));
-                foreach (Type hType in handllerTypes)
+                foreach (Type hType in typeof(IEventHandler<>).GetMakeGenericType(mType))
                 {
                     eventBus.Subscribe(mType, hType);
                 }
             }
         }
+        /// <summary>
+        /// 添加模块
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="moduleOptions"></param>
         public static void RabbitMQEventBusModule(this IApplicationBuilder app, Action<RabbitMQEventBusModuleOption> moduleOptions)
         {
             IEventHandlerModuleFactory factory = app.ApplicationServices.GetRequiredService<IEventHandlerModuleFactory>();

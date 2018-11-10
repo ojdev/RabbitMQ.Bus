@@ -18,7 +18,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         }
 
         /// <summary>
-        /// 
+        /// 设置客户端名称
         /// </summary>
         /// <param name="assembly"></param>
         public void ClientProvidedAssembly(string assembly)
@@ -38,7 +38,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
             Configuration.NetworkRecoveryInterval = maxRetryDelay;
         }
         /// <summary>
-        /// 
+        /// 消息消费异常处理
         /// </summary>
         /// <param name="maxRetryDelay">消息消费失败的重试时间间隔（默认1秒）</param>
         public void RetryOnConsumeFailure(TimeSpan maxRetryDelay)

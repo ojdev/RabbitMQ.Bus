@@ -74,59 +74,61 @@ namespace RabbitMQ.EventBus.AspNetCore
             where THandler : IEventHandler<TEvent>
         {
             Subscribe(typeof(TEvent), typeof(THandler));
+            #region MyRegion
             /*object attribute = typeof(TEvent).GetCustomAttributes(typeof(EventBusAttribute), true).FirstOrDefault();
-            if (attribute is EventBusAttribute attr)
-            {
-                string queue = attr.Queue ?? $"{ attr.Exchange }.{ typeof(TEvent).Name }";
-                if (!_persistentConnection.IsConnected)
+                if (attribute is EventBusAttribute attr)
                 {
-                    _persistentConnection.TryConnect();
-                }
-                IModel channel;
-                #region snippet
-                try
-                {
-                    channel = _persistentConnection.ExchangeDeclare(exchange: attr.Exchange, type: type);
-                    channel.QueueDeclarePassive(queue);
-                }
-                catch
-                {
-                    channel = _persistentConnection.ExchangeDeclare(exchange: attr.Exchange, type: type);
-                    channel.QueueDeclare(queue: queue,
-                                         durable: true,
-                                         exclusive: false,
-                                         autoDelete: false,
-                                         arguments: null);
-                }
-                #endregion
-                channel.QueueBind(queue, attr.Exchange, attr.RoutingKey, null);
-                channel.BasicQos(0, 1, false);
-                EventingBasicConsumer consumer = new EventingBasicConsumer(channel);
-                consumer.Received += async (model, ea) =>
-                {
-                    string body = Encoding.UTF8.GetString(ea.Body);
-                    bool isAck = false;
+                    string queue = attr.Queue ?? $"{ attr.Exchange }.{ typeof(TEvent).Name }";
+                    if (!_persistentConnection.IsConnected)
+                    {
+                        _persistentConnection.TryConnect();
+                    }
+                    IModel channel;
+                    #region snippet
                     try
                     {
-                        await ProcessEvent<TEvent, THandler>(body);
-                        channel.BasicAck(ea.DeliveryTag, multiple: false);
-                        isAck = true;
+                        channel = _persistentConnection.ExchangeDeclare(exchange: attr.Exchange, type: type);
+                        channel.QueueDeclarePassive(queue);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
+                        channel = _persistentConnection.ExchangeDeclare(exchange: attr.Exchange, type: type);
+                        channel.QueueDeclare(queue: queue,
+                                             durable: true,
+                                             exclusive: false,
+                                             autoDelete: false,
+                                             arguments: null);
                     }
-                    finally
+                    #endregion
+                    channel.QueueBind(queue, attr.Exchange, attr.RoutingKey, null);
+                    channel.BasicQos(0, 1, false);
+                    EventingBasicConsumer consumer = new EventingBasicConsumer(channel);
+                    consumer.Received += async (model, ea) =>
                     {
-                        _logger.Information($"RabbitMQEventBus\t{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")}\t{isAck}\t{ea.Exchange}\t{ea.RoutingKey}\t{body}");
-                    }
-                };
-                channel.CallbackException += (sender, ex) =>
-                {
+                        string body = Encoding.UTF8.GetString(ea.Body);
+                        bool isAck = false;
+                        try
+                        {
+                            await ProcessEvent<TEvent, THandler>(body);
+                            channel.BasicAck(ea.DeliveryTag, multiple: false);
+                            isAck = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
+                        }
+                        finally
+                        {
+                            _logger.Information($"RabbitMQEventBus\t{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")}\t{isAck}\t{ea.Exchange}\t{ea.RoutingKey}\t{body}");
+                        }
+                    };
+                    channel.CallbackException += (sender, ex) =>
+                    {
 
-                };
-                channel.BasicConsume(queue: queue, autoAck: false, consumer: consumer);
-            }*/
+                    };
+                    channel.BasicConsume(queue: queue, autoAck: false, consumer: consumer);
+                }*/ 
+            #endregion
         }
 
         public void Subscribe(Type eventType, Type eventHandleType, string type = ExchangeType.Topic)
@@ -202,14 +204,5 @@ namespace RabbitMQ.EventBus.AspNetCore
             Type concreteType = typeof(IEventHandler<>).MakeGenericType(eventType);
             await (Task)concreteType.GetMethod("Handle").Invoke(eventHandler, new object[] { integrationEvent });
         }
-        public void Dispose()
-        {
-            //if (_consumerChannel != null)
-            //{
-            //    _consumerChannel.Dispose();
-            //}
-
-        }
-
     }
 }

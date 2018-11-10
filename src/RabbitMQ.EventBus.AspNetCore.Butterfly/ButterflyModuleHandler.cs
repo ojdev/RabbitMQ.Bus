@@ -6,27 +6,22 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class RabbitMQEventBusConnectionConfigurationBuildExtensions
+    /// <summary>
+    /// Butterfly处理
+    /// </summary>
+    public class ButterflyModuleHandler : IModuleHandle
     {
-        public static RabbitMQEventBusModuleOption AddButterfly(this RabbitMQEventBusModuleOption build, IServiceTracer tracer)
-        {
-            build.AddModule(ButterflyHandler.Handle(tracer));
-            return build;
-        }
-    }
-    public class ButterflyHandler : IModuleHandle
-    {
-        private static ButterflyHandler _butterflyHandler;
+        private static ButterflyModuleHandler _butterflyHandler;
         private readonly IServiceTracer _serviceTracer;
-        public static ButterflyHandler Handle(IServiceTracer serviceTracer)
+        public static ButterflyModuleHandler Handle(IServiceTracer serviceTracer)
         {
             if (_butterflyHandler == null)
             {
-                _butterflyHandler = new ButterflyHandler(serviceTracer);
+                _butterflyHandler = new ButterflyModuleHandler(serviceTracer);
             }
             return _butterflyHandler;
         }
-        private ButterflyHandler(IServiceTracer serviceTracer)
+        private ButterflyModuleHandler(IServiceTracer serviceTracer)
         {
             _serviceTracer = serviceTracer;
         }
