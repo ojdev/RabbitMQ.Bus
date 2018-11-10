@@ -12,4 +12,4 @@
 |Package|Status|
 |:------|:-----:|
 |RabbitMQ.EventBus.AspNetCore|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.svg)](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore)|
-|RabbitMQ.EventBus.AspNetCore.Butterfly|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.Butterfly)](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.Butterfly)|
+|RabbitMQ.EventBus.AspNetCore.Butterfly|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.Butterfly.svg)](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.Butterfly)|
