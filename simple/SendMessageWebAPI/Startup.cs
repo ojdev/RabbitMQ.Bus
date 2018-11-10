@@ -1,6 +1,7 @@
 ﻿using AspectCore.Extensions.Autofac;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Housecool.Butterfly.Client.AspNetCore;
 using Housecool.Butterfly.Client.Tracing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -31,15 +32,23 @@ namespace SendMessageWebAPI
                 eventBusOption.RetryOnConsumeFailure( TimeSpan.FromSeconds(1));
             });
             services.AddScoped<SendMessageManager>();
+            services.AddButterfly(butterfly =>
+            {
+
+                butterfly.CollectorUrl = "http://192.168.0.252:6401";
+                butterfly.Service = "RabbitMQEventBusTest";
+            });
             ContainerBuilder container = new ContainerBuilder();
             container.Populate(services);
             container.RegisterDynamicProxy();
+            //
 
+            
             return new AutofacServiceProvider(container.Build());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env/*, IServiceTracer tracer*/)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IServiceTracer tracer)
         {
             if (env.IsDevelopment())
             {
@@ -48,7 +57,7 @@ namespace SendMessageWebAPI
             app.RabbitMQEventBusAutoSubscribe();
             app.RabbitMQEventBusModule(moduleOptions =>
             {
-                moduleOptions.AddButterfly(null);
+                moduleOptions.AddButterfly(tracer);
             });
             //Task.Factory.StartNew(async () =>
             //{

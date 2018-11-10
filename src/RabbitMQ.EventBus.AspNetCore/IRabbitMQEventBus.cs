@@ -5,7 +5,7 @@ using System;
 namespace RabbitMQ.EventBus.AspNetCore
 {
     /// <summary>
-    /// 
+    /// RabbitMQEventBus
     /// </summary>
     public interface IRabbitMQEventBus
     {

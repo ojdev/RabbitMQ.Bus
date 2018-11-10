@@ -15,18 +15,6 @@ namespace RabbitMQ.EventBus.AspNetCore.Modules
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="typeName"></param>
-        /// <param name="handler"></param>
-        void TryAddPubliushEventHandler(string typeName, Action<EventBusArgs> handler);
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="typeName"></param>
-        /// <param name="handler"></param>
-        void TryAddSubscribeEventHandler(string typeName, Action<EventBusArgs> handler);
-        /// <summary>
-        /// 
-        /// </summary>
         void PubliushEvent(EventBusArgs e);
         /// <summary>
         /// 

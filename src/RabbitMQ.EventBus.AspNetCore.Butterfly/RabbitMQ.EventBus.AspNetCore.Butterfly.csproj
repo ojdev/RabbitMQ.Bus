@@ -11,6 +11,7 @@
     <RepositoryUrl>https://github.com/ojdev/RabbitMQ.Bus</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
     <PackageTags>rqbbitmq,dnc,eventbus,butterfly</PackageTags>
+    <Description>RabbitMQ.EventBus.AspNetCore.Butterfly</Description>
   </PropertyGroup>
 
   <ItemGroup>
