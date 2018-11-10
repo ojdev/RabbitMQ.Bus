@@ -11,11 +11,12 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="connectionConfiguration"></param>
-        public RabbitMQEventBusConnectionConfigurationBuild(RabbitMQEventBusConnectionConfiguration connectionConfiguration)
+        /// <param name="configuration"></param>
+        public RabbitMQEventBusConnectionConfigurationBuild(RabbitMQEventBusConnectionConfiguration configuration)
         {
-            Configuration = connectionConfiguration;
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -27,14 +28,22 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// <summary>
         /// 网络恢复配置
         /// </summary>
-        /// <param name="automaticRecovery">是否开启网络自动恢复</param>
-        /// <param name="maxRetryCount">连接出现错误后重试连接的指数次数</param>
-        /// <param name="maxRetryDelay">网络自动恢复时间间隔</param>
+        /// <param name="automaticRecovery">是否开启网络自动恢复（默认：true）</param>
+        /// <param name="maxRetryCount">连接出现错误后重试连接的指数次数(默认：50)</param>
+        /// <param name="maxRetryDelay">网络自动恢复时间间隔（默认5秒）</param>
         public void EnableRetryOnFailure(bool automaticRecovery, int maxRetryCount, TimeSpan maxRetryDelay)
         {
             Configuration.AutomaticRecoveryEnabled = automaticRecovery;
             Configuration.FailReConnectRetryCount = maxRetryCount;
             Configuration.NetworkRecoveryInterval = maxRetryDelay;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="maxRetryDelay">消息消费失败的重试时间间隔（默认1秒）</param>
+        public void RetryOnConsumeFailure(TimeSpan maxRetryDelay)
+        {
+            Configuration.ConsumerFailRetryInterval = maxRetryDelay;
         }
     }
 }

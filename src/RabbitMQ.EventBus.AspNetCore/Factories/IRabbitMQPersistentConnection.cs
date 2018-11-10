@@ -11,6 +11,15 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
         /// <summary>
         /// 
         /// </summary>
+        string Endpoint { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        string ClientProvidedName { get; }
+        TimeSpan ConsumerFailRetryInterval { get; }
+        /// <summary>
+        /// 
+        /// </summary>
         bool IsConnected { get; }
         /// <summary>
         /// 

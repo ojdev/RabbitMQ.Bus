@@ -1,6 +1,7 @@
 ﻿using AspectCore.Extensions.Autofac;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Housecool.Butterfly.Client.Tracing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ namespace SendMessageWebAPI
             {
                 eventBusOption.ClientProvidedAssembly("RabbitMQEventBusTest");
                 eventBusOption.EnableRetryOnFailure(true, 5000, TimeSpan.FromSeconds(30));
+                eventBusOption.RetryOnConsumeFailure( TimeSpan.FromSeconds(1));
             });
             services.AddScoped<SendMessageManager>();
             ContainerBuilder container = new ContainerBuilder();
@@ -37,13 +39,17 @@ namespace SendMessageWebAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env/*, IServiceTracer tracer*/)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
             app.RabbitMQEventBusAutoSubscribe();
+            app.RabbitMQEventBusModule(moduleOptions =>
+            {
+                moduleOptions.AddButterfly(null);
+            });
             //Task.Factory.StartNew(async () =>
             //{
             //    //为了验证先启动生产者发送消息，后启动消费者消费的情况
