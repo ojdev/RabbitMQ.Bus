@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>欧俊</Authors>
+    <Company>欧俊</Company>
+    <PackageProjectUrl>https://github.com/ojdev/RabbitMQ.Bus</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/ojdev/RabbitMQ.Bus/raw/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/ojdev/RabbitMQ.Bus/master/rabbitmq.bus.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/ojdev/RabbitMQ.Bus</RepositoryUrl>
+    <RepositoryType>github</RepositoryType>
+    <PackageTags>rqbbitmq,dnc,eventbus,butterfly</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
