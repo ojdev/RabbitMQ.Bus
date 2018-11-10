@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     NetworkRecoveryInterval = configuration.NetworkRecoveryInterval,
                     Uri = new Uri(connectionString),
                 };
-                return new DefaultRabbitMQPersistentConnection(configuration.ClientProvidedName, factory, logger, configuration.FailReConnectRetryCount);
+                return new DefaultRabbitMQPersistentConnection(configuration.ClientProvidedName, factory, logger, configuration.FailReConnectRetryCount, configuration.ConsumerFailRetryInterval);
             });
             services.TryAddSingleton<IEventHandlerModuleFactory, EventHandlerModuleFactory>();
             services.TryAddSingleton<IRabbitMQEventBus, DefaultRabbitMQEventBus>();

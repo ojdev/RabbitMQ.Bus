@@ -66,10 +66,19 @@ namespace SendMessageWebAPI
             return Task.CompletedTask;
         }
     }
+    public static class ErrorCount
+    {
+        public static int Index { get; set; } = 0;
+    }
     public class SendMessageHandle2 : IEventHandler<SendMessage2>
     {
         public Task Handle(SendMessage2 message)
         {
+            if (ErrorCount.Index++ < 5)
+            {
+                int d = 9;
+                int x = d /0;
+            }
             Console.WriteLine($"收到消息2{message.Message}");
             return Task.CompletedTask;
         }

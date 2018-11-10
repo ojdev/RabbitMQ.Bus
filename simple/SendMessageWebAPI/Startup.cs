@@ -28,6 +28,7 @@ namespace SendMessageWebAPI
             {
                 eventBusOption.ClientProvidedAssembly("RabbitMQEventBusTest");
                 eventBusOption.EnableRetryOnFailure(true, 5000, TimeSpan.FromSeconds(30));
+                eventBusOption.RetryOnConsumeFailure( TimeSpan.FromSeconds(1));
             });
             services.AddScoped<SendMessageManager>();
             ContainerBuilder container = new ContainerBuilder();

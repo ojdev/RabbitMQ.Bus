@@ -12,7 +12,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// </summary>
         public string ClientProvidedName { get; set; }
         /// <summary>
-        /// 连接出现错误后重试连接的指数次数(默认：50)
+        /// 连接出现错误后重试连接的次数(默认：50)
         /// </summary>
         public int FailReConnectRetryCount { get; set; }
         /// <summary>
@@ -24,6 +24,11 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// </summary>
         public TimeSpan NetworkRecoveryInterval { get; set; }
         /// <summary>
+        /// 消息消费失败的重试时间间隔（默认1秒）
+        /// </summary>
+        public TimeSpan ConsumerFailRetryInterval { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
         public RabbitMQEventBusConnectionConfiguration()
@@ -31,6 +36,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
             FailReConnectRetryCount = 50;
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5);
             AutomaticRecoveryEnabled = true;
+            ConsumerFailRetryInterval = TimeSpan.FromSeconds(1);
         }
     }
 }

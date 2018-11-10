@@ -8,8 +8,15 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
     /// </summary>
     public interface IRabbitMQPersistentConnection : IDisposable
     {
+        /// <summary>
+        /// 
+        /// </summary>
         string Endpoint { get; }
+        /// <summary>
+        /// 
+        /// </summary>
         string ClientProvidedName { get; }
+        TimeSpan ConsumerFailRetryInterval { get; }
         /// <summary>
         /// 
         /// </summary>
