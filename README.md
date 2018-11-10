@@ -7,7 +7,7 @@
 |RabbitMQ.Bus|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.Bus.svg)](https://badge.fury.io/nu/RabbitMQ.Bus)|
 |RabbitMQ.Bus.Autofac|[![NuGet version](https://badge.fury.io/nu/RabbitMQ.Bus.Autofac.svg)](https://badge.fury.io/nu/RabbitMQ.Bus.Autofac)|
 
-##！推荐
+## 推荐
 
 |Package|Status|
 |:------|:-----:|
