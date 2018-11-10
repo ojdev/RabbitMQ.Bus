@@ -6,6 +6,7 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.EventBus.AspNetCore.Attributes;
 using RabbitMQ.EventBus.AspNetCore.Events;
 using RabbitMQ.EventBus.AspNetCore.Factories;
+using RabbitMQ.EventBus.AspNetCore.Modules;
 using System;
 using System.Linq;
 using System.Text;
@@ -21,14 +22,31 @@ namespace RabbitMQ.EventBus.AspNetCore
         private readonly IRabbitMQPersistentConnection _persistentConnection;
         private readonly ILogger<DefaultRabbitMQEventBus> _logger;
         private readonly IServiceProvider _serviceProvider;
-
-        public DefaultRabbitMQEventBus(IRabbitMQPersistentConnection persistentConnection, ILogger<DefaultRabbitMQEventBus> logger, IServiceProvider serviceProvider)
+        private readonly IEventHandlerModuleFactory _eventHandlerFactory;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="persistentConnection"></param>
+        /// <param name="serviceProvider"></param>
+        /// <param name="eventHandlerFactory"></param>
+        /// <param name="logger"></param>
+        public DefaultRabbitMQEventBus(IRabbitMQPersistentConnection persistentConnection, IServiceProvider serviceProvider, IEventHandlerModuleFactory eventHandlerFactory, ILogger<DefaultRabbitMQEventBus> logger)
         {
             _persistentConnection = persistentConnection ?? throw new ArgumentNullException(nameof(persistentConnection));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _eventHandlerFactory = eventHandlerFactory ?? throw new ArgumentNullException(nameof(eventHandlerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
         private IModel PublishChannel;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TMessage"></typeparam>
+        /// <param name="message"></param>
+        /// <param name="exchange"></param>
+        /// <param name="routingKey"></param>
+        /// <param name="type"></param>
         public void Publish<TMessage>(TMessage message, string exchange, string routingKey, string type = ExchangeType.Topic)
         {
             if (PublishChannel?.IsOpen != true)
@@ -49,6 +67,7 @@ namespace RabbitMQ.EventBus.AspNetCore
                              basicProperties: properties,
                              body: body.GetBytes());
             _logger.Information(body);
+            _eventHandlerFactory?.PubliushEvent(new EventBusArgs(_persistentConnection.Endpoint, exchange, "", routingKey, type, _persistentConnection.ClientProvidedName, body));
         }
         public void Subscribe<TEvent, THandler>(string type = ExchangeType.Topic)
             where TEvent : IEvent
@@ -156,6 +175,7 @@ namespace RabbitMQ.EventBus.AspNetCore
                     }
                     finally
                     {
+                        _eventHandlerFactory?.SubscribeEvent(new EventBusArgs(_persistentConnection.Endpoint, ea.Exchange, queue, attr.RoutingKey, type, _persistentConnection.ClientProvidedName, body));
                         _logger.Information($"RabbitMQEventBus\t{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")}\t{isAck}\t{ea.Exchange}\t{ea.RoutingKey}\t{body}");
                     }
                 };

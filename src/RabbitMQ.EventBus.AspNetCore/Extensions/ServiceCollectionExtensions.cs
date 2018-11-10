@@ -6,6 +6,7 @@ using RabbitMQ.EventBus.AspNetCore;
 using RabbitMQ.EventBus.AspNetCore.Configurations;
 using RabbitMQ.EventBus.AspNetCore.Events;
 using RabbitMQ.EventBus.AspNetCore.Factories;
+using RabbitMQ.EventBus.AspNetCore.Modules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,6 +41,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 };
                 return new DefaultRabbitMQPersistentConnection(configuration.ClientProvidedName, factory, logger, configuration.FailReConnectRetryCount);
             });
+            services.TryAddSingleton<IEventHandlerModuleFactory, EventHandlerModuleFactory>();
             services.TryAddSingleton<IRabbitMQEventBus, DefaultRabbitMQEventBus>();
             IEnumerable<Type> messageTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes().Where(t => t.GetInterfaces().Contains(typeof(IEvent))));
             foreach (Type mType in messageTypes)
@@ -69,6 +71,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     eventBus.Subscribe(mType, hType);
                 }
             }
+        }
+        public static void RabbitMQEventBusModule(this IApplicationBuilder app, Action<RabbitMQEventBusModuleOption> moduleOptions)
+        {
+            IEventHandlerModuleFactory factory = app.ApplicationServices.GetRequiredService<IEventHandlerModuleFactory>();
+            RabbitMQEventBusModuleOption moduleOption = new RabbitMQEventBusModuleOption(factory);
+            moduleOptions?.Invoke(moduleOption);
         }
     }
 }

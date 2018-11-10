@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RabbitMQ.EventBus.AspNetCore.Factories;
+using System;
 
 namespace RabbitMQ.EventBus.AspNetCore.Configurations
 {
@@ -11,11 +12,12 @@ namespace RabbitMQ.EventBus.AspNetCore.Configurations
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="connectionConfiguration"></param>
-        public RabbitMQEventBusConnectionConfigurationBuild(RabbitMQEventBusConnectionConfiguration connectionConfiguration)
+        /// <param name="configuration"></param>
+        public RabbitMQEventBusConnectionConfigurationBuild(RabbitMQEventBusConnectionConfiguration configuration)
         {
-            Configuration = connectionConfiguration;
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
+
         /// <summary>
         /// 
         /// </summary>

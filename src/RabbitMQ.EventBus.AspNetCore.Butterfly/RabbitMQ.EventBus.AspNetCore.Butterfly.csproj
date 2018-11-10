@@ -4,4 +4,12 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Housecool.Butterfly.Client.AspNetCore" Version="0.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.EventBus.AspNetCore\RabbitMQ.EventBus.AspNetCore.csproj" />
+  </ItemGroup>
+
 </Project>
