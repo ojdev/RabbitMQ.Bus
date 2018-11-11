@@ -1,4 +1,5 @@
 ﻿using RabbitMQ.Client;
+using RabbitMQ.EventBus.AspNetCore.Configurations;
 using System;
 
 namespace RabbitMQ.EventBus.AspNetCore.Factories
@@ -9,17 +10,13 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
     public interface IRabbitMQPersistentConnection : IDisposable
     {
         /// <summary>
+        /// 
+        /// </summary>
+        RabbitMQEventBusConnectionConfiguration Configuration { get; }
+        /// <summary>
         /// 连接点
         /// </summary>
         string Endpoint { get; }
-        /// <summary>
-        /// 客户端
-        /// </summary>
-        string ClientProvidedName { get; }
-        /// <summary>
-        /// 消费消息异常后的拒绝时间
-        /// </summary>
-        TimeSpan ConsumerFailRetryInterval { get; }
         /// <summary>
         /// 是否打开链接
         /// </summary>

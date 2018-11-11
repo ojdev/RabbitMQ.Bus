@@ -4,6 +4,7 @@ using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
+using RabbitMQ.EventBus.AspNetCore.Configurations;
 using System;
 using System.IO;
 using System.Net.Sockets;
@@ -13,26 +14,21 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
 
     internal sealed class DefaultRabbitMQPersistentConnection : IRabbitMQPersistentConnection
     {
-        private readonly string _clientProvidedName;
+        public RabbitMQEventBusConnectionConfiguration Configuration { get; }
+        //private readonly string _clientProvidedName;
         private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<DefaultRabbitMQPersistentConnection> _logger;
-        private readonly int _retryCount;
         private IConnection _connection;
         private bool _disposed;
         private readonly object sync_root = new object();
 
 
         public string Endpoint => _connection?.Endpoint.ToString();
-        public string ClientProvidedName { get; }
-        public TimeSpan ConsumerFailRetryInterval { get; }
-        public DefaultRabbitMQPersistentConnection(string clientProvidedName, IConnectionFactory connectionFactory, ILogger<DefaultRabbitMQPersistentConnection> logger, int retryCount, TimeSpan consumerFailRetryInterval)
+        public DefaultRabbitMQPersistentConnection(RabbitMQEventBusConnectionConfiguration configuration,IConnectionFactory connectionFactory, ILogger<DefaultRabbitMQPersistentConnection> logger)
         {
-            _clientProvidedName = clientProvidedName ?? throw new ArgumentNullException(nameof(clientProvidedName));
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _retryCount = retryCount;
-            ClientProvidedName = clientProvidedName;
-            ConsumerFailRetryInterval = consumerFailRetryInterval;
         }
 
         public bool IsConnected => _connection != null && _connection.IsOpen && !_disposed;
@@ -74,7 +70,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
             {
                 RetryPolicy policy = RetryPolicy.Handle<SocketException>()
                     .Or<BrokerUnreachableException>()
-                    .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
+                    .WaitAndRetry(Configuration.FailReConnectRetryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                     {
                         _logger.LogWarning(ex.ToString());
                     }
@@ -82,7 +78,7 @@ namespace RabbitMQ.EventBus.AspNetCore.Factories
 
                 policy.Execute(() =>
                 {
-                    _connection = _connectionFactory.CreateConnection(clientProvidedName: _clientProvidedName);
+                    _connection = _connectionFactory.CreateConnection(clientProvidedName: Configuration.ClientProvidedName);
                 });
 
                 if (IsConnected)

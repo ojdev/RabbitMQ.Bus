@@ -37,10 +37,9 @@ namespace Microsoft.Extensions.DependencyInjection
                         .Set("ClientProvidedName", e.ClientProvidedName)
                         .Set(nameof(EventBusArgs.ExchangeType), e.ExchangeType)
                         .Set(nameof(EventBusArgs.Exchange), e.Exchange)
-                        .Set(nameof(EventBusArgs.Queue), e.Queue)
                         .Set(nameof(EventBusArgs.RoutingKey), e.RoutingKey)
                         .Set(nameof(EventBusArgs.Message), e.Message)
-                        .PeerAddress(e.EndPoint);
+                        .PeerAddress(e.Endpoint);
                         return Task.CompletedTask;
                     });
                 }
@@ -66,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
                          .Set(nameof(EventBusArgs.Queue), e.Queue)
                          .Set(nameof(EventBusArgs.RoutingKey), e.RoutingKey)
                          .Set(nameof(EventBusArgs.Message), e.Message)
-                         .PeerAddress(e.EndPoint);
+                         .PeerAddress(e.Endpoint);
                          return Task.CompletedTask;
                      });
                 }

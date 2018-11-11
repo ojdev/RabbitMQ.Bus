@@ -8,7 +8,7 @@
         /// <summary>
         /// 
         /// </summary>
-        public string EndPoint { get; set; }
+        public string Endpoint { get; set; }
         /// <summary>
         /// 交换机
         /// </summary>
@@ -45,7 +45,7 @@
         /// <param name="message">消息</param>
         public EventBusArgs(string endPoint, string exchange, string queue, string routingKey, string exchangeType, string clientProvidedName, string message)
         {
-            EndPoint = endPoint;
+            Endpoint = endPoint;
             Exchange = exchange;
             Queue = queue;
             RoutingKey = routingKey;
@@ -53,10 +53,13 @@
             ClientProvidedName = clientProvidedName;
             Message = message;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
-            return $"{EndPoint}\t{ClientProvidedName}\t{Exchange}\t{ExchangeType}\t{Queue}\t{RoutingKey}\t{Message}";
+            return $"{Endpoint}\t{ClientProvidedName}\t{Exchange}\t{ExchangeType}\t{Queue}\t{RoutingKey}\t{Message}";
         }
     }
 }
