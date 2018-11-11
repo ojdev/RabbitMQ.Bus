@@ -38,7 +38,7 @@ namespace RabbitMQ.EventBus.AspNetCore
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private IModel PublishChannel;
+        private IModel _publishChannel;
         /// <summary>
         /// 
         /// </summary>
@@ -49,25 +49,25 @@ namespace RabbitMQ.EventBus.AspNetCore
         /// <param name="type"></param>
         public void Publish<TMessage>(TMessage message, string exchange, string routingKey, string type = ExchangeType.Topic)
         {
-            if (PublishChannel?.IsOpen != true)
+            if (_publishChannel?.IsOpen != true)
             {
                 if (_persistentConnection.IsConnected)
                 {
                     _persistentConnection.TryConnect();
                 }
-                PublishChannel = _persistentConnection.ExchangeDeclare(exchange, type: type);
-                PublishChannel.BasicReturn += async (se, ex) => await Task.Delay(5000).ContinueWith(t => Publish(ex.Body, ex.Exchange, ex.RoutingKey));
+                _publishChannel = _persistentConnection.ExchangeDeclare(exchange, type: type);
+                _publishChannel.BasicReturn += async (se, ex) => await Task.Delay(1000).ContinueWith(t => Publish(ex.Body, ex.Exchange, ex.RoutingKey));
             }
-            IBasicProperties properties = PublishChannel.CreateBasicProperties();
+            IBasicProperties properties = _publishChannel.CreateBasicProperties();
             properties.DeliveryMode = 2; // persistent
             string body = message.Serialize();
-            PublishChannel.BasicPublish(exchange: exchange,
+            _publishChannel.BasicPublish(exchange: exchange,
                              routingKey: routingKey,
                              mandatory: true,
                              basicProperties: properties,
                              body: body.GetBytes());
             _logger.Information(body);
-            _eventHandlerFactory?.PubliushEvent(new EventBusArgs(_persistentConnection.Endpoint, exchange, "", routingKey, type, _persistentConnection.ClientProvidedName, body));
+            _eventHandlerFactory?.PubliushEvent(new EventBusArgs(_persistentConnection.Endpoint, exchange, "", routingKey, type, _persistentConnection.Configuration.ClientProvidedName, body));
         }
         public void Subscribe<TEvent, THandler>(string type = ExchangeType.Topic)
             where TEvent : IEvent
@@ -127,7 +127,7 @@ namespace RabbitMQ.EventBus.AspNetCore
 
                     };
                     channel.BasicConsume(queue: queue, autoAck: false, consumer: consumer);
-                }*/ 
+                }*/
             #endregion
         }
 
@@ -174,11 +174,11 @@ namespace RabbitMQ.EventBus.AspNetCore
                     catch (Exception ex)
                     {
                         _logger.LogError(new EventId(ex.HResult), ex, ex.Message);
-                        await Task.Delay((int)_persistentConnection.ConsumerFailRetryInterval.TotalMilliseconds).ContinueWith(p => channel.BasicNack(ea.DeliveryTag, false, true));
+                        await Task.Delay((int)_persistentConnection.Configuration.ConsumerFailRetryInterval.TotalMilliseconds).ContinueWith(p => channel.BasicNack(ea.DeliveryTag, false, true));
                     }
                     finally
                     {
-                        _eventHandlerFactory?.SubscribeEvent(new EventBusArgs(_persistentConnection.Endpoint, ea.Exchange, queue, attr.RoutingKey, type, _persistentConnection.ClientProvidedName, body));
+                        _eventHandlerFactory?.SubscribeEvent(new EventBusArgs(_persistentConnection.Endpoint, ea.Exchange, queue, attr.RoutingKey, type, _persistentConnection.Configuration.ClientProvidedName, body));
                         _logger.Information($"RabbitMQEventBus\t{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")}\t{isAck}\t{ea.Exchange}\t{ea.RoutingKey}\t{body}");
                     }
                 };
@@ -200,9 +200,13 @@ namespace RabbitMQ.EventBus.AspNetCore
         private async Task ProcessEvent(string body, Type eventType, Type eventHandleType)
         {
             object eventHandler = _serviceProvider.GetRequiredService(eventHandleType);
+            if (eventHandler == null)
+            {
+                throw new InvalidOperationException(eventHandleType.Name);
+            }
             object integrationEvent = JsonConvert.DeserializeObject(body, eventType);
             Type concreteType = typeof(IEventHandler<>).MakeGenericType(eventType);
-            await (Task)concreteType.GetMethod("Handle").Invoke(eventHandler, new object[] { integrationEvent });
+            await (Task)concreteType.GetMethod(nameof(IEventHandler<IEvent>.Handle)).Invoke(eventHandler, new object[] { integrationEvent });
         }
     }
 }
