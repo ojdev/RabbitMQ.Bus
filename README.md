@@ -2,7 +2,7 @@
 一个.netcore下的，十分简单的rabbitmq封装，基于RabbitMQ.Client
 ## [wiki](https://github.com/ojdev/RabbitMQ.Bus/wiki)
 1. 连接失败自动重试
-1. 消息消费失败会自动打回队列重新拉去
+1. 消息消费失败会自动打回队列重新拉去（默认1秒）
 1. 使用单例模式
 ## 推荐
 
