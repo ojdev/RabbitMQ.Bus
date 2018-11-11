@@ -1,3 +1,6 @@
+## RabbitMQ.EventBus.AspNetCore
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/v8gfh6pe2u2laqoa?svg=true)](https://ci.appveyor.com/project/yuleyule66/cap)
+[![NuGet version](https://badge.fury.io/nu/RabbitMQ.EventBus.AspNetCore.svg)
 # RabbitMQ.Bus 
 一个.netcore下的，十分简单的rabbitmq封装，基于RabbitMQ.Client
 ## [wiki](https://github.com/ojdev/RabbitMQ.Bus/wiki)
