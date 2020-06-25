@@ -14,7 +14,15 @@
     <Version>1.0.6</Version>
     <RepositoryType>github</RepositoryType>
     <PackageIconUrl>https://raw.githubusercontent.com/ojdev/RabbitMQ.Bus/master/rabbitmq.bus.png</PackageIconUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.0\RabbitMQ.Bus.xml</DocumentationFile>
